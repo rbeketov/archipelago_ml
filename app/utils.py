@@ -11,7 +11,7 @@ def get_sum_GPT(
         "modelUri": model_uri,
         "completionOptions": {
             "stream": False,
-            "temperature": 0.1,
+            "temperature": 1.0,
             "maxTokens": "2000"
         },
         "messages": [
