@@ -11,10 +11,14 @@ def get_sum_GPT(
         "modelUri": model_uri,
         "completionOptions": {
             "stream": False,
-            "temperature": 1.0,
+            "temperature": 0.5,
             "maxTokens": "2000"
         },
         "messages": [
+            {
+                "role": "system",
+                "text": "Ты помогаешь суммаризировать диолог. Обязательно перескажу и суммаризируй диалог между людьми без лишних вводных"
+            },
             {
                 "role": "user",
                 "text": f"{input_text}",
