@@ -92,22 +92,20 @@ CONFIG = {
 
 recall_api = RecallApi(CONFIG["RECALL_API_TOKEN"])    
 
+class SRRequestFields(Enum):
+    MEETING_URL = "url"
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
-
-    class RequestFields(Enum):
-        MEETING_URL = "url"
-
     try:
+        logger.info(f"get req: {request}")
         if not request.is_json:
             return abort(400, description="Request body must be JSON")
 
-        meeting_url = request.get_json().get(RequestFields.MEETING_URL.value)
+        meeting_url = request.get_json().get(SRRequestFields.MEETING_URL.value)
         if not meeting_url:
             return abort(400, description="Meeting URL is required")
         
-        logger.info(f"get req: {request}")
         resp = recall_api.start_recording("Kotegov Dmitry", CONFIG["DESTINATION_URL"])
 
         logger.info(f"/start_recording: {resp.json()}")
