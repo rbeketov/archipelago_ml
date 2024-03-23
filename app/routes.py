@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 from utils import get_sum_GPT, get_mindmap_GPT
 
+from zoom_bot_api import RecallApi
+
 load_dotenv()
 
 API_KEY = os.environ.get("API_KEY")
@@ -79,6 +81,67 @@ def get_mindmap():
         logger.error(f"Ошибка: {e}")
         return abort(400)
 
+# ---- recall
+    
+
+CONFIG = {
+    "RECALL_API_TOKEN": os.environ.get("RECALL_API_TOKEN"),
+    "DESTINATION_URL": "185.241.194.125:8080/transcription",
+}    
+
+
+recall_api = RecallApi(CONFIG["RECALL_API_TOKEN"])    
+
+
+@app.route('/start_recording', methods=['POST'])
+def start_recording():
+
+    class RequestFields(Enum):
+        MEETING_URL = "url"
+
+    try:
+        meeting_url = request.json[RequestFields.MEETING_URL.value]
+        if meeting_url == "":
+            return abort(400)
+
+        resp = recall_api.start_recording("Kotegov Dmitry", CONFIG["DESTINATION_URL"])
+
+        logger.info(f"/start_recording: {resp.json()}")
+
+        return jsonify("OK")
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+        return abort(400)
+
+
+@app.route('/stop_recording', methods=['POST'])
+def stop_recording():
+
+    class RequestFields(Enum):
+        BOT_ID = "bot_id"
+
+    try:
+        bot_id = request.json[RequestFields.BOT_ID.value]
+        resp = recall_api.stop_recording(bot_id)
+
+        logger.info(f"/stop_recording: {resp.json()}")
+
+        return jsonify("OK")
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+        return abort(400)
+
+@app.route('/transcription', methods=['POST'])
+def get_trascription():
+    try:
+        logger.info(f"webhook /transcription: {request}")
+        return jsonify({"success": True})
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+        return abort(400)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
