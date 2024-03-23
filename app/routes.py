@@ -98,7 +98,7 @@ class SRRequestFields(Enum):
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
     try:
-        logger.info(f"get req: {request}")
+        logger.info(f"get req: {request.json}")
         if not request.is_json:
             return abort(400, description="Request body must be JSON")
 
