@@ -1,6 +1,7 @@
 import json
 import os
 import logging
+import sys
 
 from enum import Enum
 from flask import Flask, request, jsonify, abort
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
 # handler = logging.FileHandler(f"{LOGS_DIR}/server.log")
+handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s') 
 handler.setFormatter(formatter)
 logger.setLevel(logging.INFO)
