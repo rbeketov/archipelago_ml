@@ -100,10 +100,13 @@ def start_recording():
         MEETING_URL = "url"
 
     try:
-        meeting_url = request.json[RequestFields.MEETING_URL.value]
-        if meeting_url == "":
-            return abort(400)
+        if not request.is_json:
+            return abort(400, description="Request body must be JSON")
 
+        meeting_url = request.get_json().get(RequestFields.MEETING_URL.value)
+        if not meeting_url:
+            return abort(400, description="Meeting URL is required")
+        
         resp = recall_api.start_recording("Kotegov Dmitry", CONFIG["DESTINATION_URL"])
 
         logger.info(f"/start_recording: {resp.json()}")
