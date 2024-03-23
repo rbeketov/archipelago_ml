@@ -19,7 +19,7 @@ class RecallApiBase:
         self.headers = {
             "accept": "application/json",
             "content-type": "application/json",
-            "Authorization": f"Token recall_api_token"
+            "Authorization": f"Token {recall_api_token}"
         }
     
     def _url(self, path):
