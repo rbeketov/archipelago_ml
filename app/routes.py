@@ -140,7 +140,7 @@ def stop_recording():
 @app.route('/transcription', methods=['POST'])
 def get_trascription():
     try:
-        logger.info(f"webhook /transcription: {request}")
+        logger.info(f"webhook /transcription: {request.json()}")
         return jsonify({"success": True})
 
     except Exception as e:
