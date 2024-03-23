@@ -6,18 +6,19 @@ def get_sum_GPT(
     input_text: str,
     model_uri: str,
     api_key: str,
+    temperature: float,
 ) -> str:
     prompt = {
         "modelUri": model_uri,
         "completionOptions": {
             "stream": False,
-            "temperature": 0.5,
+            "temperature": temperature,
             "maxTokens": "2000"
         },
         "messages": [
             {
                 "role": "system",
-                "text": "Ты помогаешь суммаризировать диолог. Обязательно перескажу и суммаризируй диалог между людьми без лишних вводных"
+                "text": "Ты помогаешь суммаризировать диолог. Твоя задача описать маленьким текстом о чём был диалог"
             },
             {
                 "role": "user",
@@ -40,18 +41,19 @@ def get_mindmap_GPT(
     input_text: str,
     model_uri: str,
     api_key: str,
+    temperature: float,
 ) -> str:
     prompt = {
         "modelUri": model_uri,
         "completionOptions": {
             "stream": False,
-            "temperature": 0.1,
+            "temperature": temperature,
             "maxTokens": "2000"
         },
         "messages": [
             {
                 "role": "system",
-                "text": "Ты  опытный редактор. Декопозируй указанный текст на 3 темы, выведи только темы через запятую"
+                "text": "Ты опытный редактор. Декопозируй указанный текст на 3 темы, выведи только темы через запятую"
             },
             {
                 "role": "user",
