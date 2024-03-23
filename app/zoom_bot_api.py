@@ -2,7 +2,7 @@ import requests
 import http.client
 import logging
 
-# Enable HTTP debugging
+'''# Enable HTTP debugging
 http.client.HTTPConnection.debuglevel = 1
 
 # Configure logging
@@ -10,7 +10,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 requests_log = logging.getLogger("urllib3")
 requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
+requests_log.propagate = True'''
 
 class RecallApiBase:
     url = 'https://us-west-2.recall.ai{path}'
