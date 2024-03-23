@@ -108,7 +108,7 @@ def start_recording():
         if not meeting_url:
             return abort(400, description="Meeting URL is required")
         
-        resp = recall_api.start_recording("Kotegov Dmitry", CONFIG["DESTINATION_URL"])
+        resp = recall_api.start_recording("Kotegov Dmitry", meeting_url, CONFIG["DESTINATION_URL"])
 
         logger.info(f"/start_recording: {resp.json()}")
 
