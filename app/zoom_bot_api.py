@@ -13,7 +13,7 @@ requests_log.setLevel(logging.DEBUG)
 requests_log.propagate = True
 
 class RecallApiBase:
-    url = 'https://api.recall.ai{path}'
+    url = 'https://us-west-2.recall.ai{path}'
 
     def __init__(self, recall_api_token):
         self.headers = {
