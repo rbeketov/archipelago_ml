@@ -37,8 +37,8 @@ class RecallApiBase:
 class RecallApi(RecallApiBase): 
     def start_recording(self, bot_name, meeting_url, destination_url):
         body = {
-            bot_name: bot_name,
-            meeting_url: meeting_url,
+            "bot_name": bot_name,
+            "meeting_url": meeting_url,
             "transcription_options": {
                 "provider": 'default',
             },
