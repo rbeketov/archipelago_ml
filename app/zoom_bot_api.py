@@ -55,7 +55,7 @@ class RecallApi(RecallApiBase):
         return self.recall_post('/api/v1/bot', body)
 
     def stop_recording(self, bot_id):
-        return self.recall_post(f"/api/v1/bot/{bot_id}/leave_call")
+        return self.recall_post(f"/api/v1/bot/{bot_id}/leave_call", json_body={})
 
     def recording_state(self, bot_id):
         return self.recall_get(f'/api/v1/bot/{bot_id}')
