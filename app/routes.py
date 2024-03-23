@@ -91,7 +91,7 @@ CONFIG = {
     "DESTINATION_URL": "185.241.194.125:8080/transcription",
 }    
 
-
+logger.info(f"RECALL_API_TOKEN: {CONFIG['RECALL_API_TOKEN']}")
 recall_api = RecallApi(CONFIG["RECALL_API_TOKEN"])    
 
 class SRRequestFields(Enum):
