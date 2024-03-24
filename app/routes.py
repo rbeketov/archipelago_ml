@@ -31,7 +31,11 @@ def json_abort(status_code, description=None):
 
     response.status_code = status_code
     logger.debug(response)
-    abort(response)
+    try:
+        abort(response)
+    except Exception as e:
+        logger.debug(e)
+
 
 
 class RequestFields(Enum):
