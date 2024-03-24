@@ -23,6 +23,7 @@ logger = Logger().get_logger(__name__)
 
 
 def json_abort(status_code, description=None):
+    logger.debug("in json_abort")
     if description is None:
         response = jsonify({'error': 'Error'})
     else:
