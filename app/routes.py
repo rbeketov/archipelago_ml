@@ -206,8 +206,9 @@ def get_trascription():
     try:
         logger.info(f"webhook /transcription: {request.json}")
 
-        bot_id = request.json['data']['bot_id']
-        transcript = request.json['transcipt']
+        payload = request.json['data']
+        bot_id = payload['bot_id']
+        transcript = payload['transcipt']
 
         bot = zoom_bot_net.get_by_bot_id(bot_id=bot_id)
         if bot is None:
