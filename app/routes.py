@@ -212,7 +212,7 @@ def bot_state():
         state = bot.recording_state()
 
         if isinstance(state, str):
-            return jsonify({state: state})
+            return jsonify({"state": state})
 
         return jsonify({state: 'ok'})
 
