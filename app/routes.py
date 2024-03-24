@@ -214,7 +214,7 @@ def bot_state():
         if isinstance(state, str):
             return jsonify({"state": state})
 
-        return jsonify({state: 'ok'})
+        return jsonify({"state": 'ok'})
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
