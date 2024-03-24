@@ -1,6 +1,8 @@
 import json
 import os
 import sys
+import logging
+import requests
 
 from enum import Enum
 from flask import Flask, request, jsonify, abort
@@ -38,6 +40,7 @@ def json_error(status_code, description=None):
 class RequestFields(Enum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
+    TEMPERATURE = "temperature"
 
 
 app = Flask(__name__)
@@ -51,9 +54,16 @@ def get_summarize():
             return json_error(403)
 
         text = request.json[RequestFields.TEXT_VALUE.value]
+        temperature = request.json[RequestFields.TEMPERATURE.value]
         logger.info(f"Принят запрос {text}")
 
-        summ_text = get_sum_GPT(text, MODEL_URI_SUMM, API_KEY)
+        summ_text = get_sum_GPT(
+            text,
+            MODEL_URI_SUMM,
+            API_KEY,
+            temperature,
+        )
+
         logger.info(f"Суммаризированный текст {summ_text}")
 
         json_data = {"summ_text": summ_text}
@@ -74,9 +84,16 @@ def get_mindmap():
 
 
         text = request.json[RequestFields.TEXT_VALUE.value]
+        temperature = request.json[RequestFields.TEMPERATURE.value]
         logger.info(f"Принят запрос {text}")
 
-        mindmap_text = get_mindmap_GPT(text, MODEL_URI_MINDMAP, API_KEY)
+        mindmap_text = get_mindmap_GPT(
+            text,
+            MODEL_URI_MINDMAP,
+            API_KEY,
+            temperature,
+        )
+
         logger.info(f"Ответ майндмапы {mindmap_text}")
 
         json_data = {"mindmap_text": mindmap_text}
