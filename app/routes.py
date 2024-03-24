@@ -29,6 +29,7 @@ def json_abort(status_code, description=None):
         response = jsonify({'error': description})
 
     response.status_code = status_code
+    logger.debug(response)
     abort(response)
 
 
