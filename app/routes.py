@@ -271,7 +271,7 @@ def get_zoom_sum():
             return jsonify({"has_sum": False})
 
 
-        summ_text = get_sum_GPT(summ_prompt, MODEL_URI_SUMM, API_KEY)
+        summ_text = get_sum_GPT(summ_prompt, MODEL_URI_SUMM, API_KEY, 0.8)
         logger.info(f"Суммаризированный текст {summ_text}")
 
         json_data = {"summ_text": summ_text, "has_sum": True}
