@@ -1,6 +1,5 @@
 import json
 import os
-import logging
 import sys
 
 from enum import Enum
@@ -9,7 +8,9 @@ from dotenv import load_dotenv
 
 from utils import get_sum_GPT, get_mindmap_GPT
 
-from zoom_bot_api import RecallApi
+from zoom_bot_api import ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
+
+from logger import Logger
 
 load_dotenv()
 
@@ -18,19 +19,7 @@ MODEL_URI_SUMM = os.environ.get("MODEL_URI_SUMM")
 MODEL_URI_MINDMAP = os.environ.get("MODEL_URI_MINDMAP")
 TOKEN = os.environ.get("TOKEN")
 
-LOGS_DIR = "logs/"
-
-
-logger = logging.getLogger(__name__)
-if not os.path.exists(LOGS_DIR):
-    os.makedirs(LOGS_DIR)
-# handler = logging.FileHandler(f"{LOGS_DIR}/server.log")
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s') 
-handler.setFormatter(formatter)
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)
-
+logger = Logger().get_logger(__name__)
 
 class RequestFields(Enum):
     TOKEN_VALUE = "token"
@@ -38,7 +27,6 @@ class RequestFields(Enum):
 
 
 app = Flask(__name__)
-
 
 @app.route('/get-summarize', methods=['POST'])
 def get_summarize():
@@ -83,34 +71,46 @@ def get_mindmap():
         logger.error(f"Ошибка: {e}")
         return abort(400)
 
-# ---- recall
+
+# ---- recall zoom
     
-
-CONFIG = {
+ZOOM_BOT_CONFIG: ZoomBotConfig = {
     "RECALL_API_TOKEN": os.environ.get("RECALL_API_TOKEN"),
-    "DESTINATION_URL": "http://185.241.194.125:8080/transcription",
-}    
+    "WEBHOOK_URL": "http://185.241.194.125:8080/transcription",
+    "NAME": "Dmitry Kotegov",
+}     
 
-logger.info(f"RECALL_API_TOKEN: {CONFIG['RECALL_API_TOKEN']}")
-recall_api = RecallApi(CONFIG["RECALL_API_TOKEN"])    
-
-class SRRequestFields(Enum):
-    MEETING_URL = "url"
+zoom_bot_net = ZoomBotNet(ZOOM_BOT_CONFIG)
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
+
+    class RequestFields(Enum):
+        USER_ID = "user_id"
+        MEETING_URL = "url"
+        TOKEN_VALUE = "token"
+
     try:
         logger.info(f"get req: {request.json}")
         if not request.is_json:
             return abort(400, description="Request body must be JSON")
 
-        meeting_url = request.get_json().get(SRRequestFields.MEETING_URL.value)
-        if not meeting_url:
-            return abort(400, description="Meeting URL is required")
+        # validate
+        token = request.json[RequestFields.TOKEN_VALUE.value]
+        if token != TOKEN:
+            return abort(403)
         
-        resp = recall_api.start_recording("Kotegov Dmitry", meeting_url, CONFIG["DESTINATION_URL"])
-
-        logger.info(f"/start_recording: {resp.json()}")
+        meeting_url = request.get_json().get(RequestFields.MEETING_URL.value)
+        if not meeting_url:
+            return abort(400, description="meeting_url is required")
+        
+        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        if not user_id:
+            return abort(400, description="user_id is required")
+        
+        #
+        bot = zoom_bot_net.new_bot(user_id)
+        bot.join_and_start_recording(meeting_url=meeting_url)
 
         return jsonify("OK")
 
@@ -123,13 +123,64 @@ def start_recording():
 def stop_recording():
 
     class RequestFields(Enum):
-        BOT_ID = "bot_id"
+        USER_ID = "user_id"
+        TOKEN_VALUE = "token"
 
     try:
-        bot_id = request.json[RequestFields.BOT_ID.value]
-        resp = recall_api.stop_recording(bot_id)
+        logger.info(f"get req: {request.json}")
+        if not request.is_json:
+            return abort(400, description="Request body must be JSON")
 
-        logger.info(f"/stop_recording: {resp.json()}")
+        # validate
+        token = request.json[RequestFields.TOKEN_VALUE.value]
+        if token != TOKEN:
+            return abort(403)
+        
+        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        if not user_id:
+            return abort(400, description="user_id is required")
+
+        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        if bot is None:
+            return abort(400, description="No such bot")
+        
+        bot.leave()
+
+        return jsonify("OK")
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+        return abort(400)
+    
+@app.route('/bot_state', methods=['POST'])
+def stop_recording():
+
+    class RequestFields(Enum):
+        USER_ID = "user_id"
+        TOKEN_VALUE = "token"
+
+    try:
+        logger.info(f"get req: {request.json}")
+        if not request.is_json:
+            return abort(400, description="Request body must be JSON")
+
+        # validate
+        token = request.json[RequestFields.TOKEN_VALUE.value]
+        if token != TOKEN:
+            return abort(403)
+        
+        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        if not user_id:
+            return abort(400, description="user_id is required")
+
+        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        if bot is None:
+            return abort(400, description="No such bot")
+
+        state = bot.recording_state()
+
+        if isinstance(state, str):
+            return abort(400, description=state)
 
         return jsonify("OK")
 
@@ -141,6 +192,16 @@ def stop_recording():
 def get_trascription():
     try:
         logger.info(f"webhook /transcription: {request.json}")
+
+        bot_id = request.json['data']['bot_id']
+        transcript = request.json['transcipt']
+
+        bot = zoom_bot_net.get_by_bot_id(bot_id=bot_id)
+        if bot is None:
+            logger.error("No such bot")
+        else:
+            bot.add_transcription(Transcription.from_recall_resp(transcript))
+
         return jsonify({"success": True})
 
     except Exception as e:
