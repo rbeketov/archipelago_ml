@@ -222,5 +222,45 @@ def get_trascription():
         logger.error(f"Ошибка: {e}")
         return json_error(400)
 
+@app.route('/get_zoom_sum', methods=['POST'])
+def get_zoom_sum():
+
+    class RequestFields(Enum):
+        USER_ID = "user_id"
+        TOKEN_VALUE = "token"
+
+    try:
+        logger.info(f"get req: {request.json}")
+        if not request.is_json:
+            return json_error(400, description="Request body must be JSON")
+
+        # validate
+        token = request.json[RequestFields.TOKEN_VALUE.value]
+        if token != TOKEN:
+            return json_error(403)
+        
+        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        if not user_id:
+            return json_error(400, description="user_id is required")
+
+        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        if bot is None:
+            return json_error(400, description="No such bot")
+
+        summ_prompt = bot.get_summary_prompt()
+        if summ_prompt is None:
+            return jsonify({"has_sum": False})
+
+
+        summ_text = get_sum_GPT(summ_prompt, MODEL_URI_SUMM, API_KEY)
+        logger.info(f"Суммаризированный текст {summ_text}")
+
+        json_data = {"summ_text": summ_text, "has_sum": True}
+        return jsonify(json_data)
+
+    except Exception as e:
+        logger.error(f"Ошибка: {e}")
+        return json_error(400)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

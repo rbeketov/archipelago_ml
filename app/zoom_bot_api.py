@@ -203,7 +203,7 @@ class ZoomBotNet:
         return bot
     
     def new_bot(self, user_id):
-
+        # TODO: Check if bot already exists
         def join_callback(bot: ZoomBot):
             with self.mutex:
                 self.botnet[bot.user_id] = bot
