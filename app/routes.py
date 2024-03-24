@@ -208,7 +208,7 @@ def get_trascription():
 
         payload = request.json['data']
         bot_id = payload['bot_id']
-        transcript = payload['transcipt']
+        transcript = payload['transcript']
 
         bot = zoom_bot_net.get_by_bot_id(bot_id=bot_id)
         if bot is None:
