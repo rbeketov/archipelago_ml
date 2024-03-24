@@ -90,7 +90,7 @@ class Transcription(TypedDict):
 
         speaker = recall_resp_tr['speaker']
         is_final = recall_resp_tr['is_final']
-        message = reduce(lambda text,new_part: f"{text}\n{new_part["text"]}", recall_resp_tr["words"], "")[1:]
+        message = reduce(lambda text,new_part: f"{text}\n{new_part['text']}", recall_resp_tr['words'], "")[1:]
 
         return Transcription(id=id, sp=SpeakerTranscription(message=message, speaker=speaker, is_final=is_final))
 
