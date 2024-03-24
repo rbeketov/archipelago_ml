@@ -21,6 +21,17 @@ TOKEN = os.environ.get("TOKEN")
 
 logger = Logger().get_logger(__name__)
 
+
+def json_abort(status_code, text_error=None):
+    if text_error is None:
+        response = jsonify({'error': 'Error'})
+    else:
+        response = jsonify({'error': text_error})
+
+    response.status_code = status_code
+    abort(response)
+
+
 class RequestFields(Enum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
@@ -33,7 +44,7 @@ def get_summarize():
     try:
         token = request.json[RequestFields.TOKEN_VALUE.value]
         if token != TOKEN:
-            return abort(403)
+            return json_abort(403)
 
         text = request.json[RequestFields.TEXT_VALUE.value]
         logger.info(f"Принят запрос {text}")
@@ -46,7 +57,7 @@ def get_summarize():
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
-        return abort(400)
+        return json_abort(400)
 
 
 
@@ -55,7 +66,7 @@ def get_mindmap():
     try:
         token = request.json[RequestFields.TOKEN_VALUE.value]
         if token != TOKEN:
-            return abort(403)
+            return json_abort(403)
 
 
         text = request.json[RequestFields.TEXT_VALUE.value]
@@ -69,7 +80,7 @@ def get_mindmap():
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
-        return abort(400)
+        return json_abort(400)
 
 
 # ---- recall zoom
@@ -93,20 +104,20 @@ def start_recording():
     try:
         logger.info(f"get req: {request.json}")
         if not request.is_json:
-            return abort(400, description="Request body must be JSON")
+            return json_abort(400, description="Request body must be JSON")
 
         # validate
         token = request.json[RequestFields.TOKEN_VALUE.value]
         if token != TOKEN:
-            return abort(403)
+            return json_abort(403)
         
         meeting_url = request.get_json().get(RequestFields.MEETING_URL.value)
         if not meeting_url:
-            return abort(400, description="meeting_url is required")
+            return json_abort(400, description="meeting_url is required")
         
         user_id = request.get_json().get(RequestFields.USER_ID.value)
         if not user_id:
-            return abort(400, description="user_id is required")
+            return json_abort(400, description="user_id is required")
         
         #
         bot = zoom_bot_net.new_bot(user_id)
@@ -116,7 +127,7 @@ def start_recording():
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
-        return abort(400)
+        return json_abort(400)
 
 
 @app.route('/stop_recording', methods=['POST'])
@@ -129,20 +140,20 @@ def stop_recording():
     try:
         logger.info(f"get req: {request.json}")
         if not request.is_json:
-            return abort(400, description="Request body must be JSON")
+            return json_abort(400, description="Request body must be JSON")
 
         # validate
         token = request.json[RequestFields.TOKEN_VALUE.value]
         if token != TOKEN:
-            return abort(403)
+            return json_abort(403)
         
         user_id = request.get_json().get(RequestFields.USER_ID.value)
         if not user_id:
-            return abort(400, description="user_id is required")
+            return json_abort(400, description="user_id is required")
 
         bot = zoom_bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
-            return abort(400, description="No such bot")
+            return json_abort(400, description="No such bot")
         
         bot.leave()
 
@@ -150,7 +161,7 @@ def stop_recording():
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
-        return abort(400)
+        return json_abort(400)
     
 @app.route('/bot_state', methods=['POST'])
 def bot_state():
@@ -162,31 +173,31 @@ def bot_state():
     try:
         logger.info(f"get req: {request.json}")
         if not request.is_json:
-            return abort(400, description="Request body must be JSON")
+            return json_abort(400, description="Request body must be JSON")
 
         # validate
         token = request.json[RequestFields.TOKEN_VALUE.value]
         if token != TOKEN:
-            return abort(403)
+            return json_abort(403)
         
         user_id = request.get_json().get(RequestFields.USER_ID.value)
         if not user_id:
-            return abort(400, description="user_id is required")
+            return json_abort(400, description="user_id is required")
 
         bot = zoom_bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
-            return abort(400, description="No such bot")
+            return json_abort(400, description="No such bot")
 
         state = bot.recording_state()
 
         if isinstance(state, str):
-            return abort(400, description=state)
+            return json_abort(400, description=state)
 
         return jsonify("OK")
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
-        return abort(400)
+        return json_abort(400)
 
 @app.route('/transcription', methods=['POST'])
 def get_trascription():
@@ -206,7 +217,7 @@ def get_trascription():
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
-        return abort(400)
+        return json_abort(400)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
