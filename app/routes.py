@@ -193,9 +193,9 @@ def bot_state():
         state = bot.recording_state()
 
         if isinstance(state, str):
-            return json_error(400, description=state)
+            return jsonify({state: state})
 
-        return jsonify("OK")
+        return jsonify({state: 'ok'})
 
     except Exception as e:
         logger.error(f"Ошибка: {e}")
