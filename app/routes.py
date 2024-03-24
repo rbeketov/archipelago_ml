@@ -153,7 +153,7 @@ def stop_recording():
         return abort(400)
     
 @app.route('/bot_state', methods=['POST'])
-def stop_recording():
+def bot_state():
 
     class RequestFields(Enum):
         USER_ID = "user_id"
