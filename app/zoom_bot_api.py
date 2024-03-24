@@ -155,7 +155,7 @@ class ZoomBot:
         resp = self.recall_api.recording_state(self.bot_id).json()
         logger.debug(resp)
 
-        status = resp['status_changed']
+        status = resp["status_changes"][-1]
 
         if status['code'] in ['call_ended', 'fatal', 'recording_permission_denied']:
             return f"{status['sub_code']}: {status['message']}"
