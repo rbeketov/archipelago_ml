@@ -97,7 +97,7 @@ class Transcription(TypedDict):
 
 class FullTranscription:
     def __init__(self):
-        t: Dict[int, SpeakerTranscription] = {}
+        self.t: Dict[int, SpeakerTranscription] = {}
 
     def add(self, tr_id, sp: SpeakerTranscription):
         self.t[tr_id] = sp
