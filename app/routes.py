@@ -22,11 +22,11 @@ TOKEN = os.environ.get("TOKEN")
 logger = Logger().get_logger(__name__)
 
 
-def json_abort(status_code, text_error=None):
-    if text_error is None:
+def json_abort(status_code, description=None):
+    if description is None:
         response = jsonify({'error': 'Error'})
     else:
-        response = jsonify({'error': text_error})
+        response = jsonify({'error': description})
 
     response.status_code = status_code
     abort(response)
