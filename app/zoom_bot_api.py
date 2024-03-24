@@ -111,11 +111,13 @@ class FullTranscription:
             if only_final and not tr_by_sp["is_final"]:
                 continue
 
-            prompt = f"""Speaker: {tr_by_sp['speaker']}
+            new_part = f"""Speaker: {tr_by_sp['speaker']}
             Text:
             {tr_by_sp["message"]}
 
             """
+            prompt = f"{prompt}{new_part}"
+
         
         if prompt == "":
             return None
