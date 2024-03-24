@@ -30,7 +30,7 @@ class Logger(metaclass=Singleton):
         Logger.handlers = [handlerFile, handlerStdout]
 
     @classmethod
-    def get_logger(cls, package, level=logging.INFO):
+    def get_logger(cls, package, level=logging.DEBUG):
         logger = logging.getLogger(package)
         logger.setLevel(level)
 
@@ -38,3 +38,7 @@ class Logger(metaclass=Singleton):
             logger.addHandler(handler)
         
         return logger   
+    
+if __name__ == '__main__':
+    logger = Logger().get_logger(__name__)
+    logger.debug('aaaa')
