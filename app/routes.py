@@ -4,6 +4,7 @@ import sys
 
 from enum import Enum
 from flask import Flask, request, jsonify, abort
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 from utils import get_sum_GPT, get_mindmap_GPT
@@ -40,6 +41,7 @@ class RequestFields(Enum):
 
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/get-summarize', methods=['POST'])
 def get_summarize():
