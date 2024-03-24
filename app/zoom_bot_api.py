@@ -136,6 +136,7 @@ class ZoomBot:
         self.leave_callback = leave_callback
 
     def join_and_start_recording(self, meeting_url):
+        logger.debug("Before start_recording")
         resp = self.recall_api.start_recording(self.bot_name, meeting_url=meeting_url, destination_url=self.webhook_url).json()
         logger.debug(resp)
         self.bot_id = resp['id']
