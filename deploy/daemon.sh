@@ -3,7 +3,7 @@
 # should be executed in py venv
 # should be executed in with sudo
 
-${PROJECT_DIR:-/home/ubuntu/archipelago_ml}
+PROJECT_DIR = ${PROJECT_DIR:-/home/ubuntu/archipelago_ml}
 
 pip install j2cli
 
