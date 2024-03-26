@@ -1,0 +1,13 @@
+[Unit]
+Description=AI POWER
+After=network.target
+
+[Service]
+WorkingDirectory={{ project_dir }}/app
+ExecStart={{ python_interpreter }} {{ project_dir }}/app/routes.py
+
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target
