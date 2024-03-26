@@ -4,8 +4,8 @@ import sys
 import logging
 import requests
 
-from StrEnum import auto, StrEnum
-from strStrEnum import StrStrEnum
+from enum import auto
+from strenum import StrEnum
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -40,19 +40,19 @@ def json_error(status_code, description=None):
     return response
 
 
-class RequestFields(StrStrEnum):
+class RequestFields(StrEnum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
     TEMPERATURE = "temperature"
 
 
-class SystemPromts(StrStrEnum):
+class SystemPromts(StrEnum):
     SUMMARAIZE = "Ты помогаешь суммаризировать диолог. Твоя задача описать маленьким текстом о чём был диалог"
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Не придумывай ничего лишнего, поправь правописание и грамматику диалога"
 
 
-class EndPoint(StrStrEnum):
+class EndPoint(StrEnum):
     SUMMARAIZE = auto()
     MIND_MAP = auto()
     CORRECT_DIALOG = auto()
