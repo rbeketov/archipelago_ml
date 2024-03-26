@@ -298,6 +298,8 @@ def get_zoom_sum():
         summ_prompt = bot.get_summary_prompt()
         if summ_prompt is None:
             return jsonify({"has_sum": False})
+        
+        logger.info(f"Промпт для суммаризации первый: {summ_prompt}")
     
         summ_text_middl = send_request_to_gpt(
             summ_prompt,
@@ -309,7 +311,7 @@ def get_zoom_sum():
 
 
         logger.info(f"Промпт для суммаризации: {summ_text_middl}")
-        
+
         summ_text = send_request_to_gpt(
             summ_text_middl,
             MODEL_URI_SUMM,
