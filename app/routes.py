@@ -47,7 +47,7 @@ class RequestFields(StrEnum):
 
 
 class SystemPromts(StrEnum):
-    SUMMARAIZE = "Ты помогаешь суммаризировать диолог. Твоя задача подробно описать диалог и выделять ключевые мысли."
+    SUMMARAIZE = "Ты помогаешь суммаризировать диолог. Твоя задача - выделять ключевые мысли. Максимум 10 предложений."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Не придумывай ничего лишнего, поправь правописание и грамматику диалога"
 
@@ -298,10 +298,20 @@ def get_zoom_sum():
         summ_prompt = bot.get_summary_prompt()
         if summ_prompt is None:
             return jsonify({"has_sum": False})
-
-        logger.info(f"Промпт для суммаризации: {summ_prompt}")
-        summ_text = send_request_to_gpt(
+    
+        summ_text_middl = send_request_to_gpt(
             summ_prompt,
+            MODEL_URI_GPT,
+            SystemPromts.CORRECT_DIALOG,
+            API_KEY,
+            1.0
+        )
+
+
+        logger.info(f"Промпт для суммаризации: {summ_text_middl}")
+        
+        summ_text = send_request_to_gpt(
+            summ_text_middl,
             MODEL_URI_SUMM,
             SystemPromts.SUMMARAIZE,
             API_KEY,
