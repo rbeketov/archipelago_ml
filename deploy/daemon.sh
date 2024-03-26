@@ -10,7 +10,7 @@ pip install j2cli
 
 export python_interpreter=$(which python)
 export project_dir=$PROJECT_DIR
-j2 ./deploy/ml.service.j2 --import-env -o /etc/systemd/system/ml.service
+j2 ./deploy/ml.service.j2 -e python_interpreter -e project_dir -o /etc/systemd/system/ml.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable ml.service
