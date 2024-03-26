@@ -4,8 +4,8 @@ import sys
 import logging
 import requests
 
-from enum import auto, Enum
-from strenum import StrEnum
+from StrEnum import auto, StrEnum
+from strStrEnum import StrStrEnum
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -40,19 +40,19 @@ def json_error(status_code, description=None):
     return response
 
 
-class RequestFields(StrEnum):
+class RequestFields(StrStrEnum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
     TEMPERATURE = "temperature"
 
 
-class SystemPromts(StrEnum):
+class SystemPromts(StrStrEnum):
     SUMMARAIZE = "Ты помогаешь суммаризировать диолог. Твоя задача описать маленьким текстом о чём был диалог"
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Не придумывай ничего лишнего, поправь правописание и грамматику диалога"
 
 
-class EndPoint(StrEnum):
+class EndPoint(StrStrEnum):
     SUMMARAIZE = auto()
     MIND_MAP = auto()
     CORRECT_DIALOG = auto()
@@ -146,7 +146,7 @@ zoom_bot_net = ZoomBotNet(ZOOM_BOT_CONFIG)
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
 
-    class RequestFields(Enum):
+    class RequestFields(StrEnum):
         USER_ID = "user_id"
         MEETING_URL = "url"
         TOKEN_VALUE = "token"
@@ -183,7 +183,7 @@ def start_recording():
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
 
-    class RequestFields(Enum):
+    class RequestFields(StrEnum):
         USER_ID = "user_id"
         TOKEN_VALUE = "token"
 
@@ -216,7 +216,7 @@ def stop_recording():
 @app.route('/bot_state', methods=['POST'])
 def bot_state():
 
-    class RequestFields(Enum):
+    class RequestFields(StrEnum):
         USER_ID = "user_id"
         TOKEN_VALUE = "token"
 
@@ -273,7 +273,7 @@ def get_trascription():
 @app.route('/get_zoom_sum', methods=['POST'])
 def get_zoom_sum():
 
-    class RequestFields(Enum):
+    class RequestFields(StrEnum):
         USER_ID = "user_id"
         TOKEN_VALUE = "token"
 
