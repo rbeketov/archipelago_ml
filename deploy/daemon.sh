@@ -12,7 +12,7 @@ export python_interpreter=$(which python)
 export project_dir=$PROJECT_DIR
 j2 ./deploy/ml.service.j2 -e python_interpreter -e project_dir -o ml.service
 
-cp ml.service /etc/systemd/system/ml.service
+sudo cp ml.service /etc/systemd/system/ml.service
 
 sudo systemctl daemon-reload
 sudo systemctl enable ml.service
