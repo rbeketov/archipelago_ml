@@ -4,6 +4,7 @@
 # should be executed in with sudo
 
 PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/archipelago_ml}"
+echo $PROJECT_DIR
 
 pip install j2cli
 
