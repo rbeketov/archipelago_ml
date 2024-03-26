@@ -305,7 +305,7 @@ def get_zoom_sum():
             MODEL_URI_SUMM,
             SystemPromts.SUMMARAIZE,
             API_KEY,
-            0.8
+            0.1
         )
 
         logger.info(f"Суммаризированный текст {summ_text}")
