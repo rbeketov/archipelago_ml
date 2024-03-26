@@ -4,7 +4,7 @@ import sys
 import logging
 import requests
 
-from enum import auto
+from enum import auto, Enum
 from strenum import StrEnum
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
