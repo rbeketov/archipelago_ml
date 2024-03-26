@@ -4,14 +4,15 @@ import sys
 import logging
 import requests
 
-from enum import Enum
+from enum import auto
+from strenum import StrEnum
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-from utils import get_sum_GPT, get_mindmap_GPT
 
 from zoom_bot_api import ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
+from gpt_utils import send_request_to_gpt
 
 from logger import Logger
 
@@ -19,8 +20,11 @@ load_dotenv()
 
 API_KEY = os.environ.get("API_KEY")
 MODEL_URI_SUMM = os.environ.get("MODEL_URI_SUMM")
-MODEL_URI_MINDMAP = os.environ.get("MODEL_URI_MINDMAP")
+MODEL_URI_GPT = os.environ.get("MODEL_URI_GPT")
 TOKEN = os.environ.get("TOKEN")
+MYSELF_IP_ADRESS = os.environ.get("MYSELF_IP_ADRESS")
+MYSELF_PORT = int(os.environ.get("MYSELF_PORT"))
+
 
 logger = Logger().get_logger(__name__)
 
@@ -36,81 +40,106 @@ def json_error(status_code, description=None):
     return response
 
 
-
-class RequestFields(Enum):
+class RequestFields(StrEnum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
     TEMPERATURE = "temperature"
 
 
+class SystemPromts(StrEnum):
+    SUMMARAIZE = "Ты помогаешь суммаризировать диолог. Твоя задача описать маленьким текстом о чём был диалог"
+    MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
+    CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Не придумывай ничего лишнего, поправь правописание и грамматику диалога"
+
+
+class EndPoint(StrEnum):
+    SUMMARAIZE = auto()
+    MIND_MAP = auto()
+    CORRECT_DIALOG = auto()
+
+
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/get-summarize', methods=['POST'])
+
+def process_request(
+    request: dict,
+    model_uri: str,
+    name_parent_endpoint: str,
+    system_prompt: str
+):
+    token = request[RequestFields.TOKEN_VALUE]
+    if token != TOKEN:
+        return json_error(403)
+
+    text = request[RequestFields.TEXT_VALUE]
+    temperature = request[RequestFields.TEMPERATURE]
+    logger.info(f"From {name_parent_endpoint}\nAccepted request {text}")
+
+    mindmap_text = send_request_to_gpt(
+        input_text=text,
+        model_uri=model_uri,
+        system_prompt=system_prompt,
+        api_key=API_KEY,
+        temperature=temperature,
+    )
+
+    logger.info(f"Response from {name_parent_endpoint}: {mindmap_text}")
+
+    json_data = {"result": mindmap_text}
+    return jsonify(json_data)
+
+
+@app.route('/gpt/get-summarize', methods=['POST'])
 def get_summarize():
+    print(request)
     try:
-        token = request.json[RequestFields.TOKEN_VALUE.value]
-        if token != TOKEN:
-            return json_error(403)
-
-        text = request.json[RequestFields.TEXT_VALUE.value]
-        temperature = request.json[RequestFields.TEMPERATURE.value]
-        logger.info(f"Принят запрос {text}")
-
-        summ_text = get_sum_GPT(
-            text,
-            MODEL_URI_SUMM,
-            API_KEY,
-            temperature,
+        return process_request(
+            request=request.json,
+            model_uri=MODEL_URI_SUMM,
+            name_parent_endpoint=EndPoint.SUMMARAIZE,
+            system_prompt=SystemPromts.SUMMARAIZE,
         )
-
-        logger.info(f"Суммаризированный текст {summ_text}")
-
-        json_data = {"summ_text": summ_text}
-        return jsonify(json_data)
-
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
         return json_error(400)
 
 
-
-@app.route('/get-mindmap', methods=['POST'])
+@app.route('/gpt/get-mindmap', methods=['POST'])
 def get_mindmap():
     try:
-        token = request.json[RequestFields.TOKEN_VALUE.value]
-        if token != TOKEN:
-            return json_error(403)
-
-
-        text = request.json[RequestFields.TEXT_VALUE.value]
-        temperature = request.json[RequestFields.TEMPERATURE.value]
-        logger.info(f"Принят запрос {text}")
-
-        mindmap_text = get_mindmap_GPT(
-            text,
-            MODEL_URI_MINDMAP,
-            API_KEY,
-            temperature,
+        return process_request(
+            request=request.json,
+            model_uri=MODEL_URI_GPT,
+            name_parent_endpoint=EndPoint.MIND_MAP,
+            system_prompt=SystemPromts.MIND_MAP,
         )
-
-        logger.info(f"Ответ майндмапы {mindmap_text}")
-
-        json_data = {"mindmap_text": mindmap_text}
-        return jsonify(json_data)
-
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
+        return json_error(400)
+
+
+@app.route('/gpt/get-correcting-dialog', methods=['POST'])
+def get_correcting_dialog():
+    try:
+        return process_request(
+            request=request.json,
+            model_uri=MODEL_URI_GPT,
+            name_parent_endpoint=EndPoint.CORRECT_DIALOG,
+            system_prompt=SystemPromts.CORRECT_DIALOG,
+        )
+    except Exception as e:
+        logger.error(f"Error: {e}")
         return json_error(400)
 
 
 # ---- recall zoom
-    
+
 ZOOM_BOT_CONFIG: ZoomBotConfig = {
     "RECALL_API_TOKEN": os.environ.get("RECALL_API_TOKEN"),
-    "WEBHOOK_URL": "http://185.241.194.125:8080/transcription",
-    "NAME": "Dmitry Kotegov",
-}     
+    "WEBHOOK_URL": f"http://{MYSELF_IP_ADRESS}:8080/transcription",
+    "NAME": "ArchipelagoSummer",
+}
 
 zoom_bot_net = ZoomBotNet(ZOOM_BOT_CONFIG)
 
@@ -128,15 +157,15 @@ def start_recording():
             return json_error(400, description="Request body must be JSON")
 
         # validate
-        token = request.json[RequestFields.TOKEN_VALUE.value]
+        token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
         
-        meeting_url = request.get_json().get(RequestFields.MEETING_URL.value)
+        meeting_url = request.get_json().get(RequestFields.MEETING_URL)
         if not meeting_url:
             return json_error(400, description="meeting_url is required")
         
-        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
         
@@ -147,7 +176,7 @@ def start_recording():
         return jsonify("OK")
 
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
         return json_error(400)
 
 
@@ -164,11 +193,11 @@ def stop_recording():
             return json_error(400, description="Request body must be JSON")
 
         # validate
-        token = request.json[RequestFields.TOKEN_VALUE.value]
+        token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
         
-        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
 
@@ -181,7 +210,7 @@ def stop_recording():
         return jsonify("OK")
 
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
         return json_error(400)
     
 @app.route('/bot_state', methods=['POST'])
@@ -197,11 +226,11 @@ def bot_state():
             return json_error(400, description="Request body must be JSON")
 
         # validate
-        token = request.json[RequestFields.TOKEN_VALUE.value]
+        token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
         
-        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
 
@@ -217,7 +246,7 @@ def bot_state():
         return jsonify({"state": 'ok'})
 
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
         return json_error(400)
 
 @app.route('/transcription', methods=['POST'])
@@ -238,7 +267,7 @@ def get_trascription():
         return jsonify({"success": True})
 
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
         return json_error(400)
 
 @app.route('/get_zoom_sum', methods=['POST'])
@@ -254,11 +283,11 @@ def get_zoom_sum():
             return json_error(400, description="Request body must be JSON")
 
         # validate
-        token = request.json[RequestFields.TOKEN_VALUE.value]
+        token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
         
-        user_id = request.get_json().get(RequestFields.USER_ID.value)
+        user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
 
@@ -271,15 +300,22 @@ def get_zoom_sum():
             return jsonify({"has_sum": False})
 
         logger.info(f"Промпт для суммаризации: {summ_prompt}")
-        summ_text = get_sum_GPT(summ_prompt, MODEL_URI_SUMM, API_KEY, 0.8)
+        summ_text = send_request_to_gpt(
+            summ_prompt,
+            MODEL_URI_SUMM,
+            SystemPromts.SUMMARAIZE,
+            API_KEY,
+            0.8
+        )
+
         logger.info(f"Суммаризированный текст {summ_text}")
 
         json_data = {"summ_text": summ_text, "has_sum": True}
         return jsonify(json_data)
 
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Error: {e}")
         return json_error(400)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)

@@ -2,7 +2,7 @@ import os
 import requests
 from requests import Response
 from logger import Logger
-from typing import Dict, TypedDict
+from typing import Dict, TypedDict, Optional, Union
 from functools import reduce
 from threading import Lock
 
@@ -102,7 +102,7 @@ class FullTranscription:
     def add(self, tr_id, sp: SpeakerTranscription):
         self.t[tr_id] = sp
 
-    def to_summary_prompt(self, only_final=True) -> str | None:
+    def to_summary_prompt(self, only_final=True) -> Optional[str]:
         # self.t.update(sorted(self.t.items(), key=lambda item: item[1]))
 
         prompt = ""
@@ -151,7 +151,7 @@ class ZoomBot:
 
         self.leave_callback(self)
         
-    def recording_state(self) -> str | bool:
+    def recording_state(self) -> Union[str, bool]:
         resp = self.recall_api.recording_state(self.bot_id).json()
         logger.debug(resp)
 
@@ -166,7 +166,7 @@ class ZoomBot:
     def add_transcription(self, tr: Transcription):
         self.transcription.add(tr['id'], tr["sp"])
 
-    def get_summary_prompt(self) -> str | None:
+    def get_summary_prompt(self) -> Optional[str]:
         return self.transcription.to_summary_prompt()
 
 # ---- Bot Factory
