@@ -300,7 +300,7 @@ def get_zoom_sum():
             return json_error(400, description="No such bot")
 
         summ_prompt_text = bot.get_summary_prompt()
-        if summ_prompt_text is None or len(summ_prompt_text) < 1500:
+        if summ_prompt_text is None or len(summ_prompt_text) < 1600:
             return jsonify({"has_sum": False})
         
         logger.info(f"Исходный текст для суммаризации: {summ_prompt_text}")
