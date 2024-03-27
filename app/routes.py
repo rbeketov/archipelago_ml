@@ -83,7 +83,7 @@ def process_request(
         system_prompt=system_prompt,
         api_key=API_KEY,
         temperature=temperature,
-        max_tokens=(len(text) * 0.9 if tokens_depends_on_req else 2000),
+        max_tokens=(len(text) + 10 if tokens_depends_on_req else 2000),
     )
 
     logger.info(f"Response from {name_parent_endpoint}: {mindmap_text}")
