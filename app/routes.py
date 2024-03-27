@@ -101,6 +101,7 @@ def get_summarize():
             model_uri=MODEL_URI_SUMM,
             name_parent_endpoint=EndPoint.SUMMARAIZE,
             system_prompt=SystemPromts.SUMMARAIZE,
+            tokens_depends_on_req=True,
         )
     except Exception as e:
         logger.error(f"Error: {e}")
