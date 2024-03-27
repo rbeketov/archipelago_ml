@@ -47,7 +47,7 @@ class RequestFields(StrEnum):
 
 
 class SystemPromts(StrEnum):
-    SUMMARAIZE = "Ты помогаешь суммаризировать диолог. Твоя задача - выделять ключевые мысли. Максимум 10 предложений."
+    SUMMARAIZE = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Расшифрока каждого говорящиего начинается со 'Speaker'. Сам текст расшифровки находится после 'Text:'. Не придумывай ничего лишнего, поправь правописание и грамматику диалога. Избавься предложений, которые не несут смысловой нагрузки и дублируются. Убери стоп-слова. Оставь имена говорящих как есть."
 
@@ -299,25 +299,26 @@ def get_zoom_sum():
         if bot is None:
             return json_error(400, description="No such bot")
 
-        summ_prompt = bot.get_summary_prompt()
-        if summ_prompt is None:
+        summ_prompt_text = bot.get_summary_prompt()
+        if summ_prompt_text is None:
             return jsonify({"has_sum": False})
         
-        logger.info(f"Промпт для суммаризации первый: {summ_prompt}")
+        logger.info(f"Исходный текст для суммаризации: {summ_prompt_text}")
     
-        summ_text_middl = send_request_to_gpt(
-            summ_prompt,
+        summ_text_cleaned = send_request_to_gpt(
+            summ_prompt_text,
             MODEL_URI_GPT,
             SystemPromts.CORRECT_DIALOG,
             API_KEY,
-            0.6
+            0.6,
+            max_tokens=len(summ_prompt_text) + 100,
         )
 
 
-        logger.info(f"Промпт для суммаризации: {summ_text_middl}")
+        logger.info(f"Текст после промт-фильтрации: {summ_text_cleaned}")
 
         summ_text = send_request_to_gpt(
-            summ_text_middl,
+            summ_text_cleaned,
             MODEL_URI_SUMM,
             SystemPromts.SUMMARAIZE,
             API_KEY,
