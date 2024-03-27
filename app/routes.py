@@ -11,7 +11,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 
-from zoom_bot_api import ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
+from zoom_bot_api import HTTPStatusException, ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
 from gpt_utils import send_request_to_gpt
 
 from logger import Logger
@@ -330,6 +330,9 @@ def get_zoom_sum():
         json_data = {"summ_text": summ_text, "has_sum": True}
         return jsonify(json_data)
 
+    except HTTPStatusException as e:
+        logger.error(f"Error: {e.res.json()}")
+        return json_error(400)
     except Exception as e:
         logger.error(f"Error: {e}")
         return json_error(400)

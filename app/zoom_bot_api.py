@@ -12,6 +12,7 @@ logger = Logger().get_logger(__name__)
 
 class HTTPStatusException(Exception):
     def __init__(self, res):
+        self.res = res
         super().__init__(res)
 
 
