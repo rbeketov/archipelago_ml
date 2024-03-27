@@ -122,6 +122,7 @@ def get_mindmap():
 @app.route('/gpt/get-correcting-dialog', methods=['POST'])
 def get_correcting_dialog():
     try:
+        logger.info(f"get req: {request.json}")
         return process_request(
             request=request.json,
             model_uri=MODEL_URI_GPT,
