@@ -1,6 +1,8 @@
 import os
 import requests
+from logger import Logger
 
+logger = Logger().get_logger(__name__)
 
 def send_request_to_gpt(
     input_text: str,
@@ -35,4 +37,5 @@ def send_request_to_gpt(
     }
 
     response = requests.post(url, headers=headers, json=prompt)
+    logger.debug(f"send_request_to_gpt response: {response}")
     return response.json()['result']['alternatives'][0]['message']['text']
