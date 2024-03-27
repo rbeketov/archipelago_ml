@@ -37,5 +37,5 @@ def send_request_to_gpt(
     }
 
     response = requests.post(url, headers=headers, json=prompt)
-    logger.debug(f"send_request_to_gpt response: {response}")
+    logger.debug(f"send_request_to_gpt response: {response.json()}")
     return response.json()['result']['alternatives'][0]['message']['text']
