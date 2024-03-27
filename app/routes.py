@@ -66,7 +66,8 @@ def process_request(
     request: dict,
     model_uri: str,
     name_parent_endpoint: str,
-    system_prompt: str
+    system_prompt: str,
+    tokens_depends_on_req=False,
 ):
     token = request[RequestFields.TOKEN_VALUE]
     if token != TOKEN:
@@ -82,6 +83,7 @@ def process_request(
         system_prompt=system_prompt,
         api_key=API_KEY,
         temperature=temperature,
+        max_tokens=(len(text) * 0.9 if tokens_depends_on_req else 2000),
     )
 
     logger.info(f"Response from {name_parent_endpoint}: {mindmap_text}")

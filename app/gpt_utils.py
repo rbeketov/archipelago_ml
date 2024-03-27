@@ -10,13 +10,14 @@ def send_request_to_gpt(
     system_prompt: str,
     api_key: str,
     temperature: float,
+    max_tokens=2000,
 ) -> str:
     prompt = {
         "modelUri": model_uri,
         "completionOptions": {
             "stream": False,
             "temperature": temperature,
-            "maxTokens": "2000"
+            "maxTokens": max_tokens
         },
         "messages": [
             {
