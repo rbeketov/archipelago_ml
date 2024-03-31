@@ -1,5 +1,6 @@
 import os
 import requests
+import json
 from requests import Response
 from logger import Logger
 from typing import Dict, TypedDict, Optional, Union
@@ -73,6 +74,10 @@ class RecallApi(RecallApiBase):
 
     def recording_state(self, bot_id):
         return self.recall_get(f'/api/v1/bot/{bot_id}')
+    
+    def transcript(self, bot_id, diarization: bool):
+        diarization_str = '?enhanced_diarization=true' if diarization else '' 
+        return self.recall_get(f'/api/v1/bot/{bot_id}/transcript{diarization_str}')
 
 # ---- Zoom bot
     
@@ -162,6 +167,10 @@ class ZoomBot:
             return f"{status['sub_code']}: {status['message']}"
 
         return True
+
+    def transcript(self, diarization: bool) -> str:
+        resp = self.recall_api.transcript(self.bot_id, diarization).json()
+        return json.dumps(resp)
 
     # add_transcription(Transcription.from_recall_resp(response['transcipt']))
     def add_transcription(self, tr: Transcription):
