@@ -175,6 +175,9 @@ def start_recording():
         
         #
         bot = zoom_bot_net.new_bot(user_id)
+        if bot is None:
+            return json_error(400, description="This user already have active bot")
+
         bot.join_and_start_recording(meeting_url=meeting_url)
 
         return jsonify("OK")
