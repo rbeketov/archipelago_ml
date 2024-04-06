@@ -39,7 +39,7 @@ class RecallApiBase:
             "content-type": "application/json",
             "Authorization": f"Token {recall_api_token}"
         }
-    
+
     def _url(self, path):
         return self.url.format(path = path)
 
@@ -52,7 +52,7 @@ class RecallApiBase:
         return wrap_http_err(requests.get(url, headers=self.headers))
 
 
-class RecallApi(RecallApiBase): 
+class RecallApi(RecallApiBase):
     def start_recording(self, bot_name, meeting_url, destination_url):
         body = {
             "bot_name": bot_name,
@@ -77,13 +77,13 @@ class RecallApi(RecallApiBase):
 
     def recording_state(self, bot_id):
         return self.recall_get(f'/api/v1/bot/{bot_id}')
-    
+
     def transcript(self, bot_id, diarization: bool):
-        diarization_str = '?enhanced_diarization=true' if diarization else '' 
+        diarization_str = '?enhanced_diarization=true' if diarization else ''
         return self.recall_get(f'/api/v1/bot/{bot_id}/transcript{diarization_str}')
 
 # ---- Zoom bot
-    
+
 class SpeakerTranscription(TypedDict):
     message: str
     is_final: bool
@@ -121,18 +121,22 @@ class FullTranscription:
             if only_final and not tr_by_sp["is_final"]:
                 continue
 
+            if 'Noise.' in tr_by_sp["message"]:
+                continue
+
             new_part = f'{tr_by_sp["speaker"]}: {tr_by_sp["message"]}\n'
             prompt = f"{prompt}{new_part}"
 
-        
         if prompt == "":
             return None
-        
+
         if self.summ == "":
             return prompt
 
-        return f"Вот начало диалога: {self.summ}, вот продолжение: {prompt}"
-    
+        final_prompt = f"Вот начало диалога: {self.summ}, вот продолжение: {prompt}"
+
+        return final_prompt
+
     def drop_to_summ(self, summary: str):
         self.summ = summary
         self.t = {}
@@ -164,7 +168,7 @@ class ZoomBot:
         logger.debug(resp)
 
         self.leave_callback(self)
-        
+
     def recording_state(self) -> Union[str, bool]:
         resp = self.recall_api.recording_state(self.bot_id).json()
         logger.debug(resp)
@@ -185,16 +189,17 @@ class ZoomBot:
         self.transcription.add(tr['id'], tr["sp"])
 
     def make_summary(self, summary_transf: callable) -> Optional[str]:
-        sum = summary_transf(self.transcription.to_prompt())
+        summ = summary_transf(self.transcription.to_prompt())
+        logger.info(f"make_summary: {summ}")
         ### TODO: handle incorrect gpt answer
-        self.transcription.drop_to_summ(sum)
+        self.transcription.drop_to_summ(summ)
 
     def get_summary(self) -> Optional[str]:
-        sum = self.transcription.summ
-
-        if sum == "":
+        summ = self.transcription.summ
+        logger.info(f"get_summary: {summ}")
+        if summ == "":
             return None
-        return sum
+        return summ
 
 
 # ---- Bot Factory
@@ -223,7 +228,7 @@ class ZoomBotNet:
             bot = self.botnet.get(user_id, None)
 
         return bot
-    
+
     def get_by_bot_id(self, bot_id: str):
         with self.mutex:
             bot = None
@@ -231,9 +236,9 @@ class ZoomBotNet:
             user_id = self.user_id_by_bot_id.get(bot_id, None)
             if user_id is not None:
                 bot = self.botnet.get(user_id, None)
-            
+
         return bot
-    
+
     def new_bot(self, user_id, summary_transf: callable, summary_interval_sec):
         if self.get_by_user_id(user_id) is not None:
             return None
@@ -244,11 +249,13 @@ class ZoomBotNet:
                 self.user_id_by_bot_id[bot.bot_id] = bot.user_id
 
                 def schedule_wrapper():
+                    logger.info("schedule_wrapper called")
                     if isinstance(bot.recording_state(), str):
                         with self.mutex:
+                            logger.info("stopping schedule_wrapper")
                             stop_jobs(self.jobs_by_bot[bot.bot_id])
-                            self.jobs_by_bot.pop(bot.bot_id, None)       
-                            
+                            self.jobs_by_bot.pop(bot.bot_id, None)
+
                     return bot.make_summary(summary_transf)
 
                 job = schedule.every(summary_interval_sec).seconds.do(schedule_wrapper)
@@ -257,6 +264,7 @@ class ZoomBotNet:
 
         def leave_callback(bot: ZoomBot):
             with self.mutex:
+                logger.info("leaving")
                 self.botnet.pop(bot.user_id, None)
                 self.user_id_by_bot_id.pop(bot.bot_id)
 
