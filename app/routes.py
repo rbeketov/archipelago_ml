@@ -37,6 +37,7 @@ TOKEN = env_or_panic("TOKEN")
 MYSELF_IP_ADRESS = env_or_panic("MYSELF_IP_ADRESS")
 MYSELF_PORT = int(env_or_panic("MYSELF_PORT"))
 SUMMARY_INTERVAL = int(env_or_panic("SUMMARY_INTERVAL"))
+RECALL_API_TOKEN = env_or_panic("RECALL_API_TOKEN")
 
 
 logger = Logger().get_logger(__name__)
@@ -74,7 +75,7 @@ class EndPoint(StrEnum):
 def summarize_by_role_builder(summarize_prompt, role) -> str:
     if role is None:
         return summarize_prompt
-    return f"{summarize_prompt}. Пиши в стиле {role}"
+    return f"{summarize_prompt}. Cтилизуй выделенные мысли в роли {role}"
 
 app = Flask(__name__)
 CORS(app)
@@ -158,7 +159,7 @@ def get_correcting_dialog():
 # ---- recall zoom
 
 ZOOM_BOT_CONFIG: ZoomBotConfig = {
-    "RECALL_API_TOKEN": os.environ.get("RECALL_API_TOKEN"),
+    "RECALL_API_TOKEN": RECALL_API_TOKEN,
     "WEBHOOK_URL": f"http://{MYSELF_IP_ADRESS}:8080/transcription",
     "NAME": "ArchipelagoSummer",
 }

@@ -5,6 +5,13 @@ from logger import Logger
 
 logger = Logger().get_logger(__name__)
 
+STOP_RESPONCES = [
+    "Простите",
+    "Я не понимаю о чем вы",
+    "К сожалению, я не могу ничего сказать об этом",
+    "Давайте сменим тему"
+]
+
 def gpt_req_sender(
     model_uri: str,
     system_prompt: str,
@@ -55,8 +62,14 @@ def send_request_to_gpt(
     logger.debug(f"send_request_to_gpt response: {response.json()}")
 
     try:
-        return response.json()['result']['alternatives'][0]['message']['text']
+        resp_res = response.json()['result']['alternatives'][0]['message']['text']
     except Exception as e:
         logger.error(f"send_request_to_gpt: {e}")
         return None
+
+    for stop in STOP_RESPONCES:
+        if stop in resp_res:
+            return None
+
+    return resp_res
 
