@@ -178,15 +178,15 @@ def start_recording():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         meeting_url = request.get_json().get(RequestFields.MEETING_URL)
         if not meeting_url:
             return json_error(400, description="meeting_url is required")
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
-        
+
         #
         bot = zoom_bot_net.new_bot(
             user_id,
@@ -226,7 +226,7 @@ def stop_recording():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
@@ -234,7 +234,7 @@ def stop_recording():
         bot = zoom_bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
-        
+
         bot.leave()
 
         return jsonify("OK")
@@ -242,7 +242,7 @@ def stop_recording():
     except Exception as e:
         logger.error(f"Error: {e}")
         return json_error(400)
-    
+
 @app.route('/bot_state', methods=['POST'])
 def bot_state():
 
@@ -259,7 +259,7 @@ def bot_state():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
@@ -316,7 +316,7 @@ def get_zoom_sum():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
@@ -324,7 +324,7 @@ def get_zoom_sum():
         bot = zoom_bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
-        
+
 
         summ = bot.get_summary()
         if summ is None:
@@ -342,15 +342,21 @@ def get_zoom_sum():
 
 # ----- scheduler
 
-def run_scheduler():
+def run_scheduler() -> threading.Thread:
     def scheduler_runner():
         while True:
             schedule.run_pending()
             time.sleep(1)
 
-    threading.Thread(target=scheduler_runner).start()
+    return threading.Thread(target=scheduler_runner)
 
 
 if __name__ == '__main__':
-    run_scheduler()
-    app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)
+    try:
+        thr = run_scheduler()
+        thr.start()
+        app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)
+    except Exception as e:
+        logger.error(f"Server has stopped with {e}")
+    finally:
+        thr.join()
