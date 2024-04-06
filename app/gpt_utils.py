@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import requests
 from logger import Logger
 
@@ -9,7 +10,7 @@ def gpt_req_sender(
     system_prompt: str,
     api_key: str,
     temperature: float,
-    max_tokens=2000,  
+    max_tokens=2000,
 ):
     def inner(input_text: str,) -> str:
         return send_request_to_gpt(input_text, model_uri, system_prompt, api_key, temperature, max_tokens)
@@ -24,7 +25,7 @@ def send_request_to_gpt(
     api_key: str,
     temperature: float,
     max_tokens=2000,
-) -> str:
+) -> Optional[str]:
     prompt = {
         "modelUri": model_uri,
         "completionOptions": {
@@ -52,4 +53,10 @@ def send_request_to_gpt(
 
     response = requests.post(url, headers=headers, json=prompt)
     logger.debug(f"send_request_to_gpt response: {response.json()}")
-    return response.json()['result']['alternatives'][0]['message']['text']
+
+    try:
+        return response.json()['result']['alternatives'][0]['message']['text']
+    except Exception as e:
+        logger.error(f"send_request_to_gpt: {e}")
+        return None
+

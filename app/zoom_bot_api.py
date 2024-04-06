@@ -188,14 +188,15 @@ class ZoomBot:
     def add_transcription(self, tr: Transcription):
         self.transcription.add(tr['id'], tr["sp"])
 
-    def make_summary(self, summary_transf: callable) -> Optional[str]:
+    def make_summary(self, summary_transf: callable) -> None:
         prompt = self.transcription.to_prompt()
         logger.info(f'Промпт: {prompt}')
 
         summ = summary_transf(self.transcription.to_prompt())
         logger.info(f"make_summary: {summ}")
-        ### TODO: handle incorrect gpt answer
-        self.transcription.drop_to_summ(summ)
+
+        return None if summ is None else self.transcription.drop_to_summ(summ)
+
 
     def get_summary(self) -> Optional[str]:
         summ = self.transcription.summ
