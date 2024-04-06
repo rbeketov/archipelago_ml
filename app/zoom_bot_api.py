@@ -191,6 +191,8 @@ class ZoomBot:
     def make_summary(self, summary_transf: callable) -> None:
         prompt = self.transcription.to_prompt()
         logger.info(f'Промпт: {prompt}')
+        if prompt is None:
+            return
 
         summ = summary_transf(self.transcription.to_prompt())
         logger.info(f"make_summary: {summ}")
