@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import logging
+import threading
 import requests
 
 from enum import auto
@@ -12,18 +13,30 @@ from dotenv import load_dotenv
 
 
 from zoom_bot_api import HTTPStatusException, ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
-from gpt_utils import send_request_to_gpt
+from gpt_utils import send_request_to_gpt, gpt_req_sender
 
 from logger import Logger
 
+import schedule
+import time
+
 load_dotenv()
 
-API_KEY = os.environ.get("API_KEY")
-MODEL_URI_SUMM = os.environ.get("MODEL_URI_SUMM")
-MODEL_URI_GPT = os.environ.get("MODEL_URI_GPT")
-TOKEN = os.environ.get("TOKEN")
-MYSELF_IP_ADRESS = os.environ.get("MYSELF_IP_ADRESS")
-MYSELF_PORT = int(os.environ.get("MYSELF_PORT"))
+
+def env_or_panic(key: str):
+    env = os.environ.get(key)
+    if env == "":
+        raise Exception(f"{key} not set")
+    return env
+
+
+API_KEY = env_or_panic("API_KEY")
+MODEL_URI_SUMM = env_or_panic("MODEL_URI_SUMM")
+MODEL_URI_GPT = env_or_panic("MODEL_URI_GPT")
+TOKEN = env_or_panic("TOKEN")
+MYSELF_IP_ADRESS = env_or_panic("MYSELF_IP_ADRESS")
+MYSELF_PORT = int(env_or_panic("MYSELF_PORT"))
+SUMMARY_INTERVAL = int(env_or_panic("SUMMARY_INTERVAL"))
 
 
 logger = Logger().get_logger(__name__)
@@ -47,7 +60,8 @@ class RequestFields(StrEnum):
 
 
 class SystemPromts(StrEnum):
-    SUMMARAIZE = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
+    SUMMARAIZE = "Выдели основные мысли из диалога"
+    SUMMARAIZE_OLD = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Расшифрока каждого говорящиего начинается со 'Speaker'. Сам текст расшифровки находится после 'Text:'. Не придумывай ничего лишнего, поправь правописание и грамматику диалога. Оставь имена говорящих как есть."
 
@@ -174,7 +188,16 @@ def start_recording():
             return json_error(400, description="user_id is required")
         
         #
-        bot = zoom_bot_net.new_bot(user_id)
+        bot = zoom_bot_net.new_bot(
+            user_id,
+            gpt_req_sender(
+                MODEL_URI_GPT,
+                SystemPromts.SUMMARAIZE,
+                API_KEY,
+                0,
+            ),
+            SUMMARY_INTERVAL,
+        )
         if bot is None:
             return json_error(400, description="This user already have active bot")
 
@@ -301,36 +324,13 @@ def get_zoom_sum():
         bot = zoom_bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
-
-        summ_prompt_text = bot.get_summary_prompt()
-        if summ_prompt_text is None or len(summ_prompt_text) < 1600:
-            return jsonify({"has_sum": False})
         
-        logger.info(f"Исходный текст для суммаризации: {summ_prompt_text}")
-    
-        summ_text_cleaned = send_request_to_gpt(
-            summ_prompt_text,
-            MODEL_URI_GPT,
-            SystemPromts.CORRECT_DIALOG,
-            API_KEY,
-            0.6,
-            max_tokens=len(summ_prompt_text) + 100,
-        )
 
+        summ = bot.get_summary()
+        if summ is None:
+            return jsonify({"has_sum": False})
 
-        logger.info(f"Текст после промт-фильтрации: {summ_text_cleaned}")
-
-        summ_text = send_request_to_gpt(
-            summ_text_cleaned,
-            MODEL_URI_SUMM,
-            SystemPromts.SUMMARAIZE,
-            API_KEY,
-            0.6
-        )
-
-        logger.info(f"Суммаризированный текст {summ_text}")
-
-        json_data = {"summ_text": summ_text, "has_sum": True}
+        json_data = {"summ_text": summ, "has_sum": True}
         return jsonify(json_data)
 
     except HTTPStatusException as e:
@@ -340,5 +340,17 @@ def get_zoom_sum():
         logger.error(f"Error: {e}")
         return json_error(400)
 
+# ----- scheduler
+
+def run_scheduler():
+    def scheduler_runner():
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+
+    threading.Thread(target=scheduler_runner).start()
+
+
 if __name__ == '__main__':
+    run_scheduler()
     app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)
