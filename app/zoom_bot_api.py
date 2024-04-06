@@ -175,7 +175,7 @@ class ZoomBot:
 
         status = resp["status_changes"][-1]
 
-        if status['code'] in ['call_ended', 'fatal', 'recording_permission_denied']:
+        if status['code'] in ['call_ended', 'fatal', 'recording_permission_denied', 'recording_done']:
             return f"{status['sub_code']}: {status['message']}"
 
         return True
@@ -189,6 +189,9 @@ class ZoomBot:
         self.transcription.add(tr['id'], tr["sp"])
 
     def make_summary(self, summary_transf: callable) -> Optional[str]:
+        prompt = self.transcription.to_prompt()
+        logger.info(f'Промпт: {prompt}')
+
         summ = summary_transf(self.transcription.to_prompt())
         logger.info(f"make_summary: {summ}")
         ### TODO: handle incorrect gpt answer
@@ -250,6 +253,8 @@ class ZoomBotNet:
 
                 def schedule_wrapper():
                     logger.info("schedule_wrapper called")
+                    state = bot.recording_state()
+                    logger.info(f"State: {state}")
                     if isinstance(bot.recording_state(), str):
                         with self.mutex:
                             logger.info("stopping schedule_wrapper")
