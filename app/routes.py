@@ -12,7 +12,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 
-from zoom_bot_api import HTTPStatusException, ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
+from bot_api import HTTPStatusException, Bot, BotNet, BotConfig, Transcription
 from gpt_utils import send_request_to_gpt, gpt_req_sender
 
 from logger import Logger
@@ -62,6 +62,9 @@ class RequestFields(StrEnum):
 
 class SystemPromts(StrEnum):
     SUMMARAIZE = "Выдели основные мысли из диалога."
+    CLEAN_SUMMARIZATION = "Оставь только главное в тексте"
+    STYLE = lambda role: f"Стилизуй текст в роли {role}"
+
     SUMMARAIZE_OLD = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Расшифрока каждого говорящиего начинается со 'Speaker'. Сам текст расшифровки находится после 'Text:'. Не придумывай ничего лишнего, поправь правописание и грамматику диалога. Оставь имена говорящих как есть."
@@ -71,11 +74,6 @@ class EndPoint(StrEnum):
     SUMMARAIZE = auto()
     MIND_MAP = auto()
     CORRECT_DIALOG = auto()
-
-def summarize_by_role_builder(summarize_prompt, role) -> str:
-    if role is None:
-        return summarize_prompt
-    return f"{summarize_prompt}. Cтилизуй выделенные мысли в роли {role}"
 
 app = Flask(__name__)
 CORS(app)
@@ -156,15 +154,15 @@ def get_correcting_dialog():
         return json_error(400)
 
 
-# ---- recall zoom
+# ---- recall
 
-ZOOM_BOT_CONFIG: ZoomBotConfig = {
+BOT_CONFIG: BotConfig = {
     "RECALL_API_TOKEN": RECALL_API_TOKEN,
     "WEBHOOK_URL": f"http://{MYSELF_IP_ADRESS}:8080/transcription",
     "NAME": "ArchipelagoSummer",
 }
 
-zoom_bot_net = ZoomBotNet(ZOOM_BOT_CONFIG)
+bot_net = BotNet(BOT_CONFIG)
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
@@ -173,7 +171,6 @@ def start_recording():
         USER_ID = "user_id"
         MEETING_URL = "url"
         TOKEN_VALUE = "token"
-        ROLE = "role"
 
     try:
         logger.info(f"get req: {request.json}")
@@ -193,13 +190,17 @@ def start_recording():
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        role = request.get_json().get(RequestFields.ROLE, None)
-
-        bot = zoom_bot_net.new_bot(
+        bot = bot_net.new_bot(
             user_id,
             gpt_req_sender(
                 MODEL_URI_GPT,
-                summarize_by_role_builder(SystemPromts.SUMMARAIZE, role),
+                SystemPromts.SUMMARAIZE,
+                API_KEY,
+                0,
+            ),
+            gpt_req_sender(
+                MODEL_URI_GPT,
+                SystemPromts.CLEAN_SUMMARIZE,
                 API_KEY,
                 0,
             ),
@@ -238,7 +239,7 @@ def stop_recording():
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
 
@@ -271,7 +272,7 @@ def bot_state():
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
 
@@ -295,7 +296,7 @@ def get_trascription():
         bot_id = payload['bot_id']
         transcript = payload['transcript']
 
-        bot = zoom_bot_net.get_by_bot_id(bot_id=bot_id)
+        bot = bot_net.get_by_bot_id(bot_id=bot_id)
         if bot is None:
             logger.error("No such bot")
         else:
@@ -307,12 +308,13 @@ def get_trascription():
         logger.error(f"Error: {e}")
         return json_error(400)
 
-@app.route('/get_zoom_sum', methods=['POST'])
-def get_zoom_sum():
+@app.route('/get_sum', methods=['POST'])
+def get_sum():
 
     class RequestFields(StrEnum):
         USER_ID = "user_id"
         TOKEN_VALUE = "token"
+        ROLE = "role"
 
     try:
         logger.info(f"get req: {request.json}")
@@ -328,14 +330,27 @@ def get_zoom_sum():
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        role = request.get_json().get(RequestFields.ROLE, None)
+
+        bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
-
 
         summ = bot.get_summary()
         if summ is None:
             return jsonify({"has_sum": False})
+
+        if role is None or role == "dafault":
+            summ = send_request_to_gpt(
+                summ,
+                MODEL_URI_GPT,
+                SystemPromts.STYLE(role),
+                API_KEY,
+                0,
+            )
+            if summ is None:
+                return jsonify({"has_sum": False})
+
 
         json_data = {"summ_text": summ, "has_sum": True}
         return jsonify(json_data)

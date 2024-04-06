@@ -6,10 +6,12 @@ from logger import Logger
 logger = Logger().get_logger(__name__)
 
 STOP_RESPONCES = [
-    "Простите",
-    "Я не понимаю о чем вы",
-    "К сожалению, я не могу ничего сказать об этом",
-    "Давайте сменим тему"
+    "простите",
+    "я не понимаю о чем вы",
+    "я не могу ничего сказать об этом"
+    "давайте сменим тему",
+    "сложно выделить конкретные основные мысли",
+    "сложно выделить основные мысли"
 ]
 
 def gpt_req_sender(
@@ -68,8 +70,7 @@ def send_request_to_gpt(
         return None
 
     for stop in STOP_RESPONCES:
-        if stop in resp_res:
+        if stop in resp_res.lower():
             return None
 
     return resp_res
-
