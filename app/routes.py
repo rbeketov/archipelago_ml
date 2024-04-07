@@ -198,13 +198,13 @@ def start_recording():
                 API_KEY,
                 0,
             ),
+            SUMMARY_INTERVAL,
             gpt_req_sender(
                 MODEL_URI_GPT,
                 SystemPromts.CLEAN_SUMMARIZATION,
                 API_KEY,
                 0,
             ),
-            SUMMARY_INTERVAL,
         )
         if bot is None:
             return json_error(400, description="This user already have active bot")
