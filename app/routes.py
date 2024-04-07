@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import logging
+import threading
 import requests
 
 from enum import auto
@@ -11,19 +12,32 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 
-from zoom_bot_api import HTTPStatusException, ZoomBot, ZoomBotNet, ZoomBotConfig, Transcription
-from gpt_utils import send_request_to_gpt
+from bot_api import HTTPStatusException, Bot, BotNet, BotConfig, Transcription
+from gpt_utils import send_request_to_gpt, gpt_req_sender
 
 from logger import Logger
 
+import schedule
+import time
+
 load_dotenv()
 
-API_KEY = os.environ.get("API_KEY")
-MODEL_URI_SUMM = os.environ.get("MODEL_URI_SUMM")
-MODEL_URI_GPT = os.environ.get("MODEL_URI_GPT")
-TOKEN = os.environ.get("TOKEN")
-MYSELF_IP_ADRESS = os.environ.get("MYSELF_IP_ADRESS")
-MYSELF_PORT = int(os.environ.get("MYSELF_PORT"))
+
+def env_or_panic(key: str):
+    env = os.environ.get(key)
+    if env == "":
+        raise Exception(f"{key} not set")
+    return env
+
+
+API_KEY = env_or_panic("API_KEY")
+MODEL_URI_SUMM = env_or_panic("MODEL_URI_SUMM")
+MODEL_URI_GPT = env_or_panic("MODEL_URI_GPT")
+TOKEN = env_or_panic("TOKEN")
+MYSELF_IP_ADRESS = env_or_panic("MYSELF_IP_ADRESS")
+MYSELF_PORT = int(env_or_panic("MYSELF_PORT"))
+SUMMARY_INTERVAL = int(env_or_panic("SUMMARY_INTERVAL"))
+RECALL_API_TOKEN = env_or_panic("RECALL_API_TOKEN")
 
 
 logger = Logger().get_logger(__name__)
@@ -47,7 +61,11 @@ class RequestFields(StrEnum):
 
 
 class SystemPromts(StrEnum):
-    SUMMARAIZE = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
+    SUMMARAIZE = "Выдели основные мысли из диалога."
+    CLEAN_SUMMARIZATION = "Оставь только главное в тексте"
+    STYLE = lambda role: f"Стилизуй текст в роли {role}"
+
+    SUMMARAIZE_OLD = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
     CORRECT_DIALOG = "Ты помогаешь улучшать расшифроку speach to text. Расшифрока каждого говорящиего начинается со 'Speaker'. Сам текст расшифровки находится после 'Text:'. Не придумывай ничего лишнего, поправь правописание и грамматику диалога. Оставь имена говорящих как есть."
 
@@ -56,7 +74,6 @@ class EndPoint(StrEnum):
     SUMMARAIZE = auto()
     MIND_MAP = auto()
     CORRECT_DIALOG = auto()
-
 
 app = Flask(__name__)
 CORS(app)
@@ -137,15 +154,15 @@ def get_correcting_dialog():
         return json_error(400)
 
 
-# ---- recall zoom
+# ---- recall
 
-ZOOM_BOT_CONFIG: ZoomBotConfig = {
-    "RECALL_API_TOKEN": os.environ.get("RECALL_API_TOKEN"),
+BOT_CONFIG: BotConfig = {
+    "RECALL_API_TOKEN": RECALL_API_TOKEN,
     "WEBHOOK_URL": f"http://{MYSELF_IP_ADRESS}:8080/transcription",
     "NAME": "ArchipelagoSummer",
 }
 
-zoom_bot_net = ZoomBotNet(ZOOM_BOT_CONFIG)
+bot_net = BotNet(BOT_CONFIG)
 
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
@@ -164,17 +181,31 @@ def start_recording():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         meeting_url = request.get_json().get(RequestFields.MEETING_URL)
         if not meeting_url:
             return json_error(400, description="meeting_url is required")
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
-        
-        #
-        bot = zoom_bot_net.new_bot(user_id)
+
+        bot = bot_net.new_bot(
+            user_id,
+            gpt_req_sender(
+                MODEL_URI_GPT,
+                SystemPromts.SUMMARAIZE,
+                API_KEY,
+                0,
+            ),
+            gpt_req_sender(
+                MODEL_URI_GPT,
+                SystemPromts.CLEAN_SUMMARIZE,
+                API_KEY,
+                0,
+            ),
+            SUMMARY_INTERVAL,
+        )
         if bot is None:
             return json_error(400, description="This user already have active bot")
 
@@ -203,15 +234,15 @@ def stop_recording():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
-        
+
         bot.leave()
 
         return jsonify("OK")
@@ -219,7 +250,7 @@ def stop_recording():
     except Exception as e:
         logger.error(f"Error: {e}")
         return json_error(400)
-    
+
 @app.route('/bot_state', methods=['POST'])
 def bot_state():
 
@@ -236,12 +267,12 @@ def bot_state():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
 
@@ -265,7 +296,7 @@ def get_trascription():
         bot_id = payload['bot_id']
         transcript = payload['transcript']
 
-        bot = zoom_bot_net.get_by_bot_id(bot_id=bot_id)
+        bot = bot_net.get_by_bot_id(bot_id=bot_id)
         if bot is None:
             logger.error("No such bot")
         else:
@@ -277,12 +308,13 @@ def get_trascription():
         logger.error(f"Error: {e}")
         return json_error(400)
 
-@app.route('/get_zoom_sum', methods=['POST'])
-def get_zoom_sum():
+@app.route('/get_sum', methods=['POST'])
+def get_sum():
 
     class RequestFields(StrEnum):
         USER_ID = "user_id"
         TOKEN_VALUE = "token"
+        ROLE = "role"
 
     try:
         logger.info(f"get req: {request.json}")
@@ -293,44 +325,34 @@ def get_zoom_sum():
         token = request.json[RequestFields.TOKEN_VALUE]
         if token != TOKEN:
             return json_error(403)
-        
+
         user_id = request.get_json().get(RequestFields.USER_ID)
         if not user_id:
             return json_error(400, description="user_id is required")
 
-        bot = zoom_bot_net.get_by_user_id(user_id=user_id)
+        role = request.get_json().get(RequestFields.ROLE, None)
+
+        bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
 
-        summ_prompt_text = bot.get_summary_prompt()
-        if summ_prompt_text is None or len(summ_prompt_text) < 1600:
+        summ = bot.get_summary()
+        if summ is None:
             return jsonify({"has_sum": False})
-        
-        logger.info(f"Исходный текст для суммаризации: {summ_prompt_text}")
-    
-        summ_text_cleaned = send_request_to_gpt(
-            summ_prompt_text,
-            MODEL_URI_GPT,
-            SystemPromts.CORRECT_DIALOG,
-            API_KEY,
-            0.6,
-            max_tokens=len(summ_prompt_text) + 100,
-        )
+
+        if role is None or role == "dafault":
+            summ = send_request_to_gpt(
+                summ,
+                MODEL_URI_GPT,
+                SystemPromts.STYLE(role),
+                API_KEY,
+                0,
+            )
+            if summ is None:
+                return jsonify({"has_sum": False})
 
 
-        logger.info(f"Текст после промт-фильтрации: {summ_text_cleaned}")
-
-        summ_text = send_request_to_gpt(
-            summ_text_cleaned,
-            MODEL_URI_SUMM,
-            SystemPromts.SUMMARAIZE,
-            API_KEY,
-            0.6
-        )
-
-        logger.info(f"Суммаризированный текст {summ_text}")
-
-        json_data = {"summ_text": summ_text, "has_sum": True}
+        json_data = {"summ_text": summ, "has_sum": True}
         return jsonify(json_data)
 
     except HTTPStatusException as e:
@@ -340,5 +362,23 @@ def get_zoom_sum():
         logger.error(f"Error: {e}")
         return json_error(400)
 
+# ----- scheduler
+
+def run_scheduler() -> threading.Thread:
+    def scheduler_runner():
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+
+    return threading.Thread(target=scheduler_runner)
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)
+    try:
+        thr = run_scheduler()
+        thr.start()
+        app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)
+    except Exception as e:
+        logger.error(f"Server has stopped with {e}")
+    finally:
+        thr.join()

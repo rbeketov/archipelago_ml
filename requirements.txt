@@ -16,3 +16,4 @@ StrEnum==0.4.15
 urllib3==2.2.1
 Werkzeug==3.0.1
 zipp==3.18.1
+schedule==1.2.1
