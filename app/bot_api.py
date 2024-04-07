@@ -262,10 +262,10 @@ class BotNet:
             with self.mutex:
                 logger.info("leaving")
                 self.botnet.pop(bot.user_id, None)
-                self.user_id_by_bot_id.pop(bot.bot_id)
+                self.user_id_by_bot_id.pop(bot.bot_id, None)
 
                 stop_jobs(self.jobs_by_bot.get(bot.bot_id, None))
-                self.jobs_by_bot.pop(bot.bot_id)
+                self.jobs_by_bot.pop(bot.bot_id, None)
 
         def join_callback(bot: Bot):
             with self.mutex:

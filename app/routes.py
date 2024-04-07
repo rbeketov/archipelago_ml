@@ -340,7 +340,7 @@ def get_sum():
         if summ is None:
             return jsonify({"has_sum": False})
 
-        if role is None or role == "dafault":
+        if role is not None or role != "dafault":
             summ = send_request_to_gpt(
                 summ,
                 MODEL_URI_GPT,
