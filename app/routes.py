@@ -1,3 +1,5 @@
+import asyncio
+import websockets
 import json
 import os
 import sys
@@ -12,7 +14,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 
-from bot_api import HTTPStatusException, Bot, BotNet, BotConfig, Transcription
+from bot_api import HTTPStatusException, Bot, BotNet, BotConfig, Transcription, BotWebHooks
 from gpt_utils import send_request_to_gpt, gpt_req_sender
 
 from logger import Logger
@@ -38,7 +40,11 @@ MYSELF_IP_ADRESS = env_or_panic("MYSELF_IP_ADRESS")
 MYSELF_PORT = int(env_or_panic("MYSELF_PORT"))
 SUMMARY_INTERVAL = int(env_or_panic("SUMMARY_INTERVAL"))
 RECALL_API_TOKEN = env_or_panic("RECALL_API_TOKEN")
+AUDIO_WS_PORT = int("5723")
+SPEAKER_WS_PORT = int("5724")
 
+def get_ws_url(ip, port):
+    return f"ws://{ip}:{port}"
 
 logger = Logger().get_logger(__name__)
 
@@ -158,8 +164,12 @@ def get_correcting_dialog():
 
 BOT_CONFIG: BotConfig = {
     "RECALL_API_TOKEN": RECALL_API_TOKEN,
-    "WEBHOOK_URL": f"http://{MYSELF_IP_ADRESS}:8080/transcription",
     "NAME": "ArchipelagoSummer",
+    "WEBHOOKS": {
+        'speaker_ws_url': get_ws_url("0.0.0.0", SPEAKER_WS_PORT),
+        'audio_ws_url': get_ws_url('0.0.0.0', AUDIO_WS_PORT),
+        'transcription_url': f"http://{MYSELF_IP_ADRESS}:{MYSELF_PORT}/transcription",
+    }
 }
 
 bot_net = BotNet(BOT_CONFIG)
@@ -310,7 +320,6 @@ def get_trascription():
 
 @app.route('/get_sum', methods=['POST'])
 def get_sum():
-
     class RequestFields(StrEnum):
         USER_ID = "user_id"
         TOKEN_VALUE = "token"
@@ -362,6 +371,39 @@ def get_sum():
         logger.error(f"Error: {e}")
         return json_error(400)
 
+# ----- websocket
+
+async def audio_ws_handler(websocket):
+    async for message in websocket:
+        if isinstance(message, str):
+            logger.info(f"audio_handler message: {message}")
+        else:
+            participant_id = int.from_bytes(message[0:4], byteorder='little')
+            with open(f'output/{participant_id}-output.raw', 'ab') as f:
+                f.write(message[4:])
+                logger.info(f"wrote message for {participant_id}")
+
+async def speaker_ws_handler(websocket):
+    async for message in websocket:
+        if isinstance(message, str):
+            json_message = json.loads(message)
+
+            logger.info(f"speaker_handler: {json_message}")
+        
+        logger.error(f"speaker_handler: {message}")
+
+
+
+def run_websocket_server(handler, port, ip = "0.0.0.0") -> threading.Thread:
+    def websocket_runner():
+        async def websocket_main():
+            async with websockets.serve(handler, ip, port):
+                await asyncio.Future()
+
+        asyncio.run(websocket_main())
+
+    return threading.Thread(target=websocket_runner)
+
 # ----- scheduler
 
 def run_scheduler() -> threading.Thread:
@@ -372,13 +414,38 @@ def run_scheduler() -> threading.Thread:
 
     return threading.Thread(target=scheduler_runner)
 
+# ------ threads
+
+def start_all_threads(threads):
+    for thread in threads:
+        thread.start()
+
+def join_all_threads(threads):
+    for thread in threads:
+        thread.join()
+
 
 if __name__ == '__main__':
     try:
-        thr = run_scheduler()
-        thr.start()
+        #shed_thr = run_scheduler()
+        # shed_thr.start()
+
+        #audio_ws_thr = run_websocket_server(audio_ws_handler, AUDIO_WS_PORT)
+        # audio_ws_thr.start()
+
+        # speaker_ws_thr = run_websocket_server(speaker_ws_handler, SPEAKER_WS_PORT)
+        # speaker_ws_thr.start()
+
+        threads = [
+            run_scheduler(),
+            run_websocket_server(audio_ws_handler, AUDIO_WS_PORT),
+            run_websocket_server(speaker_ws_handler, SPEAKER_WS_PORT),
+        ]
+
+        start_all_threads(threads)
+
         app.run(host='0.0.0.0', port=MYSELF_PORT, debug=True)
     except Exception as e:
         logger.error(f"Server has stopped with {e}")
     finally:
-        thr.join()
+        join_all_threads(threads)

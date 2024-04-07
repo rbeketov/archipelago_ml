@@ -54,7 +54,7 @@ class RecallApiBase:
 
 
 class RecallApi(RecallApiBase):
-    def start_recording(self, bot_name, meeting_url, destination_url):
+    def start_recording(self, bot_name, meeting_url, destination_transcript_url, destination_audio_url, destination_speaker_url):
         body = {
             "bot_name": bot_name,
             "meeting_url": meeting_url,
@@ -62,7 +62,7 @@ class RecallApi(RecallApiBase):
                 "provider": 'assembly_ai',
             },
             "real_time_transcription": {
-                "destination_url": destination_url,
+                "destination_url": destination_transcript_url,
                 "partial_results": True,
             },
             "zoom": {
@@ -70,6 +70,10 @@ class RecallApi(RecallApiBase):
                 "require_recording_permission": True,
             },
             "recording_mode": "audio_only",
+            "real_time_media": {
+                "websocket_audio_destination_url": destination_audio_url,
+                "websocket_speaker_timeline_destination_url": destination_audio_url,
+            }
         }
 
         return self.recall_post('/api/v1/bot', body)
@@ -143,12 +147,15 @@ class FullTranscription:
         self.summ = summary
         self.t = {}
 
-
+class BotWebHooks(TypedDict):
+    transcription_url: str
+    speaker_ws_url: str
+    audio_ws_url: str
 
 class Bot:
-    def __init__(self, user_id, recall_api_token, bot_name, webhook_url, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _):
+    def __init__(self, user_id, recall_api_token, bot_name, webhooks: BotWebHooks, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _):
         self.bot_name = bot_name
-        self.webhook_url = webhook_url
+        self.webhooks = webhooks
         self.recall_api = RecallApi(recall_api_token=recall_api_token)
         self.transcription = FullTranscription()
 
@@ -159,7 +166,14 @@ class Bot:
 
     def join_and_start_recording(self, meeting_url):
         logger.debug("Before start_recording")
-        resp = self.recall_api.start_recording(self.bot_name, meeting_url=meeting_url, destination_url=self.webhook_url).json()
+        resp = self.recall_api.start_recording(
+            self.bot_name, 
+            meeting_url=meeting_url, 
+            destination_transcript_url=self.webhooks["transcription_url"],
+            destination_audio_url=self.webhooks["audio_ws_url"],
+            destination_speaker_url=self.webhooks["speaker_ws_url"],
+        ).json()
+
         logger.debug(resp)
         self.bot_id = resp['id']
 
@@ -221,7 +235,7 @@ class Bot:
 class BotConfig(TypedDict):
     RECALL_API_TOKEN: str
     NAME: str
-    WEBHOOK_URL: str
+    WEBHOOKS: BotWebHooks
 
 # bot can be accessed by user id (string)
 class BotNet:
