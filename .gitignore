@@ -1,5 +1,8 @@
 /.venv
 /logs
 .env
+/.mypy_cache
+.flake8
+.pylintrc
 **/*.service
 /client
