@@ -6,6 +6,10 @@ start:
 stop:
 	sudo systemctl stop ml.service
 
+force-restart:
+	sudo systemctl kill ml.service
+	sudo systemctl start ml.service
+
 restart:
 	sudo systemctl stop ml.service
 	sudo systemctl start ml.service
