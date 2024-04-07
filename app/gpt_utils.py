@@ -1,5 +1,9 @@
-import os
 import requests
+
+from db import ClickClient
+
+
+click_client = ClickClient()
 
 
 def send_request_to_gpt(
@@ -34,5 +38,9 @@ def send_request_to_gpt(
         "Authorization": api_key,
     }
 
-    response = requests.post(url, headers=headers, json=prompt)
-    return response.json()['result']['alternatives'][0]['message']['text']
+    response = requests.post(url, headers=headers, json=prompt, timeout=15)
+    result = response.json()['result']['alternatives'][0]['message']['text']
+
+    click_client.insert_new_summaraize(system_prompt, input_text, result)
+
+    return result
