@@ -20,3 +20,4 @@ urllib3==2.2.1
 Werkzeug==3.0.1
 zipp==3.18.1
 zstandard==0.22.0
+schedule==1.2.1
