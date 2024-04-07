@@ -54,21 +54,26 @@ class RecallApiBase:
 
 
 class RecallApi(RecallApiBase):
-    def start_recording(self, bot_name, meeting_url, destination_url):
+    def start_recording(self, bot_name, meeting_url, destination_transcript_url, destination_audio_url, destination_speaker_url):
         body = {
             "bot_name": bot_name,
             "meeting_url": meeting_url,
             "transcription_options": {
-                "provider": 'meeting_captions',
+                "provider": 'assembly_ai',
             },
             "real_time_transcription": {
-                "destination_url": destination_url,
+                "destination_url": destination_transcript_url,
                 "partial_results": True,
             },
             "zoom": {
                 "request_recording_permission_on_host_join": True,
                 "require_recording_permission": True,
             },
+            "recording_mode": "audio_only",
+            "real_time_media": {
+                "websocket_audio_destination_url": destination_audio_url,
+                "websocket_speaker_timeline_destination_url": destination_audio_url,
+            }
         }
 
         return self.recall_post('/api/v1/bot', body)
@@ -142,12 +147,15 @@ class FullTranscription:
         self.summ = summary
         self.t = {}
 
-
+class BotWebHooks(TypedDict):
+    transcription_url: str
+    speaker_ws_url: str
+    audio_ws_url: str
 
 class Bot:
-    def __init__(self, user_id, recall_api_token, bot_name, webhook_url, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _):
+    def __init__(self, user_id, recall_api_token, bot_name, webhooks: BotWebHooks, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _):
         self.bot_name = bot_name
-        self.webhook_url = webhook_url
+        self.webhooks = webhooks
         self.recall_api = RecallApi(recall_api_token=recall_api_token)
         self.transcription = FullTranscription()
 
@@ -158,7 +166,14 @@ class Bot:
 
     def join_and_start_recording(self, meeting_url):
         logger.debug("Before start_recording")
-        resp = self.recall_api.start_recording(self.bot_name, meeting_url=meeting_url, destination_url=self.webhook_url).json()
+        resp = self.recall_api.start_recording(
+            self.bot_name, 
+            meeting_url=meeting_url, 
+            destination_transcript_url=self.webhooks["transcription_url"],
+            destination_audio_url=self.webhooks["audio_ws_url"],
+            destination_speaker_url=self.webhooks["speaker_ws_url"],
+        ).json()
+
         logger.debug(resp)
         self.bot_id = resp['id']
 
@@ -194,6 +209,8 @@ class Bot:
         logger.info(f'Промпт: {prompt}')
         if prompt is None:
             return
+        
+        logger.info(f"sync transcrpt: {self.transcript_full(False)}")
 
         summ = summary_transf(self.transcription.to_prompt())
         logger.info(f"make_summary: {summ}")
@@ -218,7 +235,7 @@ class Bot:
 class BotConfig(TypedDict):
     RECALL_API_TOKEN: str
     NAME: str
-    WEBHOOK_URL: str
+    WEBHOOKS: BotWebHooks
 
 # bot can be accessed by user id (string)
 class BotNet:
@@ -259,10 +276,10 @@ class BotNet:
             with self.mutex:
                 logger.info("leaving")
                 self.botnet.pop(bot.user_id, None)
-                self.user_id_by_bot_id.pop(bot.bot_id)
+                self.user_id_by_bot_id.pop(bot.bot_id, None)
 
                 stop_jobs(self.jobs_by_bot.get(bot.bot_id, None))
-                self.jobs_by_bot.pop(bot.bot_id)
+                self.jobs_by_bot.pop(bot.bot_id, None)
 
         def join_callback(bot: Bot):
             with self.mutex:
