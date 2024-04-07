@@ -69,6 +69,7 @@ class RecallApi(RecallApiBase):
                 "request_recording_permission_on_host_join": True,
                 "require_recording_permission": True,
             },
+            "recording_mode": "audio_only",
         }
 
         return self.recall_post('/api/v1/bot', body)
@@ -194,6 +195,8 @@ class Bot:
         logger.info(f'Промпт: {prompt}')
         if prompt is None:
             return
+        
+        logger.info(f"sync transcrpt: {self.transcript_full(False)}")
 
         summ = summary_transf(self.transcription.to_prompt())
         logger.info(f"make_summary: {summ}")
