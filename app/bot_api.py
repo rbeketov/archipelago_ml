@@ -59,7 +59,7 @@ class RecallApi(RecallApiBase):
             "bot_name": bot_name,
             "meeting_url": meeting_url,
             "transcription_options": {
-                "provider": 'meeting_captions',
+                "provider": 'assembly_ai',
             },
             "real_time_transcription": {
                 "destination_url": destination_url,
