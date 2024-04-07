@@ -439,7 +439,7 @@ if __name__ == '__main__':
         threads = [
             run_scheduler(),
             run_websocket_server(audio_ws_handler, AUDIO_WS_PORT),
-            run_websocket_server(speaker_ws_handler, SPEAKER_WS_PORT),
+            # run_websocket_server(speaker_ws_handler, SPEAKER_WS_PORT),
         ]
 
         start_all_threads(threads)
