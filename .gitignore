@@ -4,3 +4,4 @@
 /.mypy_cache
 .flake8
 .pylintrc
+/audio_data
