@@ -7,7 +7,7 @@ from db import ClickClient
 
 logger = Logger().get_logger(__name__)
 
-STOP_RESPONCES = [
+STOP_RESPONSES = [
     "простите",
     "я не понимаю о чем вы",
     "я не могу ничего сказать об этом"
@@ -75,7 +75,7 @@ def send_request_to_gpt(
         logger.error(f"send_request_to_gpt: {e}")
         return None
 
-    for stop in STOP_RESPONCES:
+    for stop in STOP_RESPONSES:
         if stop in resp_res.lower():
             return None
 
