@@ -26,6 +26,11 @@ def gpt_req_sender(
 
     return inner
 
+from db import ClickClient
+
+
+click_client = ClickClient()
+
 
 def send_request_to_gpt(
     input_text: str,
@@ -74,3 +79,4 @@ def send_request_to_gpt(
             return None
 
     return resp_res
+
