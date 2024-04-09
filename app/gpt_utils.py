@@ -80,6 +80,9 @@ def send_request_to_gpt(
         if stop in resp_res.lower():
             return None
 
-    click_client.insert_new_summaraize(system_prompt, input_text, resp_res)
+    try:
+        click_client.insert_new_summaraize(system_prompt, input_text, resp_res)
+    except Exception as e:
+        logger.error(f"failed to log into click: {e}")
 
     return resp_res
