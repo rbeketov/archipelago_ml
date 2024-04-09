@@ -200,7 +200,7 @@ def start_recording():
             ),
             gpt_req_sender(
                 MODEL_URI_GPT,
-                SystemPromts.CLEAN_SUMMARIZE,
+                SystemPromts.CLEAN_SUMMARIZATION,
                 API_KEY,
                 0,
             ),
