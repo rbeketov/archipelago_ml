@@ -341,6 +341,8 @@ def get_sum():
 
         role = request.get_json().get(RequestFields.ROLE, None)
 
+        logger.info(f"bot net: {bot_net}")
+
         bot = bot_net.get_by_user_id(user_id=user_id)
         if bot is None:
             return json_error(400, description="No such bot")
