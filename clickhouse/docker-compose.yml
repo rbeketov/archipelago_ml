@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  clickhouse:
+  clickhouse_ml:
     image: yandex/clickhouse-server
     ports:
       - "8124:8123"
