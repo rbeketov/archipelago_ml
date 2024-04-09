@@ -307,7 +307,7 @@ class BotNet:
             user_id=user_id,
             recall_api_token=self.config["RECALL_API_TOKEN"],
             bot_name=self.config["NAME"],
-            webhook_url=self.config["WEBHOOKS"],
+            webhooks=self.config["WEBHOOKS"],
             join_callback=join_callback,
             leave_callback=leave_callback
         )
