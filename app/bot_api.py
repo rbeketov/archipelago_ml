@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import json
 from requests import Response
@@ -127,8 +128,11 @@ class FullTranscription:
             if only_final and not tr_by_sp["is_final"]:
                 continue
 
-            if 'Noise.' in tr_by_sp["message"]:
-                continue
+            #if 'Noise.' in tr_by_sp["message"]:
+            #    continue
+
+            # TODO: make copy of self.t[tr_id]
+            tr_by_sp["message"] = self.remove_word_any_regexp(tr_by_sp["message"], 'noise')
 
             new_part = f'{tr_by_sp["speaker"]}: {tr_by_sp["message"]}\n'
             prompt = f"{prompt}{new_part}"
@@ -146,6 +150,10 @@ class FullTranscription:
     def drop_to_summ(self, summary: str):
         self.summ = summary
         self.t = {}
+
+    def remove_word_any_regexp(self, inp, word) -> str:
+        c = lambda all_inp, word_inp: re.sub(word_inp, '', all_inp, flags=re.IGNORECASE)
+        return c(c(inp, f"{word} "), f" {word}")
 
 class BotWebHooks(TypedDict):
     transcription_url: str
@@ -167,8 +175,8 @@ class Bot:
     def join_and_start_recording(self, meeting_url):
         logger.debug("Before start_recording")
         resp = self.recall_api.start_recording(
-            self.bot_name, 
-            meeting_url=meeting_url, 
+            self.bot_name,
+            meeting_url=meeting_url,
             destination_transcript_url=self.webhooks["transcription_url"],
             destination_audio_url=self.webhooks["audio_ws_url"],
             destination_speaker_url=self.webhooks["speaker_ws_url"],
@@ -204,13 +212,17 @@ class Bot:
     def add_transcription(self, tr: Transcription):
         self.transcription.add(tr['id'], tr["sp"])
 
-    def make_summary(self, summary_transf: callable, summary_cleaner: Optional[callable]) -> None:
+    def make_summary(self, summary_transf: callable, min_prompt_len, summary_cleaner: Optional[callable]) -> None:
         prompt = self.transcription.to_prompt()
         logger.info(f'Промпт: {prompt}')
         if prompt is None:
             return
-        
+
         logger.info(f"sync transcrpt: {self.transcript_full(False)}")
+
+        if len(prompt) < min_prompt_len:
+            logger.info(f'prompt less than {min_prompt_len}')
+            return
 
         summ = summary_transf(self.transcription.to_prompt())
         logger.info(f"make_summary: {summ}")
@@ -235,6 +247,7 @@ class Bot:
 class BotConfig(TypedDict):
     RECALL_API_TOKEN: str
     NAME: str
+    MIN_PROMPT_LEN: int
     WEBHOOKS: BotWebHooks
 
 # bot can be accessed by user id (string)
@@ -298,7 +311,7 @@ class BotNet:
 
                         leave_callback(bot)
 
-                    bot.make_summary(summary_transf, summary_cleaner)
+                    bot.make_summary(summary_transf, self.config["MIN_PROMPT_LEN"], summary_cleaner)
 
                 job = schedule.every(summary_interval_sec).seconds.do(schedule_wrapper)
                 self.jobs_by_bot[bot.bot_id].append(job)

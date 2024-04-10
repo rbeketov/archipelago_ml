@@ -169,7 +169,8 @@ BOT_CONFIG: BotConfig = {
         'speaker_ws_url': get_ws_url("0.0.0.0", SPEAKER_WS_PORT),
         'audio_ws_url': get_ws_url('0.0.0.0', AUDIO_WS_PORT),
         'transcription_url': f"http://{MYSELF_IP_ADRESS}:{MYSELF_PORT}/transcription",
-    }
+    },
+    "MIN_PROMPT_LEN": 500,
 }
 
 bot_net = BotNet(BOT_CONFIG)
@@ -351,7 +352,7 @@ def get_sum():
         if summ is None:
             return jsonify({"has_sum": False})
 
-        if role is not None or role != "dafault":
+        if role is not None and role != "default":
             summ = send_request_to_gpt(
                 summ,
                 MODEL_URI_GPT,
@@ -391,7 +392,7 @@ async def speaker_ws_handler(websocket):
             json_message = json.loads(message)
 
             logger.info(f"speaker_handler: {json_message}")
-        
+
         logger.error(f"speaker_handler: {message}")
 
 
