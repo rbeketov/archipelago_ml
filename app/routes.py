@@ -39,6 +39,7 @@ TOKEN = env_or_panic("TOKEN")
 MYSELF_IP_ADRESS = env_or_panic("MYSELF_IP_ADRESS")
 MYSELF_PORT = int(env_or_panic("MYSELF_PORT"))
 SUMMARY_INTERVAL = int(env_or_panic("SUMMARY_INTERVAL"))
+MIN_PROMPT_LEN = int(env_or_panic("MIN_PROMPT_LEN"))
 RECALL_API_TOKEN = env_or_panic("RECALL_API_TOKEN")
 AUDIO_WS_PORT = int("5723")
 SPEAKER_WS_PORT = int("5724")
@@ -170,7 +171,7 @@ BOT_CONFIG: BotConfig = {
         'audio_ws_url': get_ws_url('0.0.0.0', AUDIO_WS_PORT),
         'transcription_url': f"http://{MYSELF_IP_ADRESS}:{MYSELF_PORT}/transcription",
     },
-    "MIN_PROMPT_LEN": 500,
+    "MIN_PROMPT_LEN": MIN_PROMPT_LEN,
 }
 
 bot_net = BotNet(BOT_CONFIG)
