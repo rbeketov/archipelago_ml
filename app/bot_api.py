@@ -161,11 +161,12 @@ class BotWebHooks(TypedDict):
     audio_ws_url: str
 
 class Bot:
-    def __init__(self, user_id, recall_api_token, bot_name, webhooks: BotWebHooks, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _):
+    def __init__(self, user_id, recall_api_token, bot_name, webhooks: BotWebHooks, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _, saver_endp: str):
         self.bot_name = bot_name
         self.webhooks = webhooks
         self.recall_api = RecallApi(recall_api_token=recall_api_token)
         self.transcription = FullTranscription()
+        self.summary_saver = SummarySaver(saver_endp)
 
         self.user_id = user_id
 
@@ -231,7 +232,10 @@ class Bot:
             summ = summary_cleaner(summ)
             logger.info(f"cleaned_sum: {summ}")
 
-        return None if summ is None else self.transcription.drop_to_summ(summ)
+        if summ is not None:
+            self.transcription.drop_to_summ(summ)
+
+        self.summary_saver.save(summ, bot_id=self.bot_id, user_id=self.user_id)
 
 
     def get_summary(self) -> Optional[str]:
@@ -249,6 +253,7 @@ class BotConfig(TypedDict):
     NAME: str
     MIN_PROMPT_LEN: int
     WEBHOOKS: BotWebHooks
+    SAVER_ENDP: str
 
 # bot can be accessed by user id (string)
 class BotNet:
@@ -322,7 +327,8 @@ class BotNet:
             bot_name=self.config["NAME"],
             webhooks=self.config["WEBHOOKS"],
             join_callback=join_callback,
-            leave_callback=leave_callback
+            leave_callback=leave_callback,
+            saver_endp=self.config["SAVER_ENDP"],
         )
 
 def stop_jobs(jobs):
@@ -331,3 +337,21 @@ def stop_jobs(jobs):
 
     for job in jobs:
         schedule.cancel_job(job)
+
+class SummarySaver:
+    def __init__(self, endp):
+        self.endp = endp
+
+    def save(self, summary: str, bot_id, user_id) -> bool:
+        try:
+            requests.post(self.endp, json={
+                summary: summary,
+                bot_id: bot_id,
+                user_id: user_id,
+            })
+            return True
+        except Exception as e:
+            logger.error('failed to save summary:', e)
+
+        return False
+
