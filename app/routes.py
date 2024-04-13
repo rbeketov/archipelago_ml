@@ -43,6 +43,7 @@ MIN_PROMPT_LEN = int(env_or_panic("MIN_PROMPT_LEN"))
 RECALL_API_TOKEN = env_or_panic("RECALL_API_TOKEN")
 AUDIO_WS_PORT = int("5723")
 SPEAKER_WS_PORT = int("5724")
+NOTES_PORT = int("8899")
 
 def get_ws_url(ip, port):
     return f"ws://{ip}:{port}"
@@ -172,6 +173,8 @@ BOT_CONFIG: BotConfig = {
         'transcription_url': f"http://{MYSELF_IP_ADRESS}:{MYSELF_PORT}/transcription",
     },
     "MIN_PROMPT_LEN": MIN_PROMPT_LEN,
+    "SUMM_GETTER_ENDP": f"http://{MYSELF_IP_ADRESS}:{NOTES_PORT}/get",
+    "SUMM_SAVER_ENDP": f"http://{MYSELF_IP_ADRESS}:{NOTES_PORT}/save",
 }
 
 bot_net = BotNet(BOT_CONFIG)
@@ -223,7 +226,9 @@ def start_recording():
 
         bot.join_and_start_recording(meeting_url=meeting_url)
 
-        return jsonify("OK")
+        return jsonify({
+            "summ_id": bot.bot_id,
+        })
 
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -323,7 +328,8 @@ def get_trascription():
 @app.route('/get_sum', methods=['POST'])
 def get_sum():
     class RequestFields(StrEnum):
-        USER_ID = "user_id"
+        # USER_ID = "user_id"
+        SUMM_ID = "summ_id"
         TOKEN_VALUE = "token"
         ROLE = "role"
 
@@ -337,19 +343,16 @@ def get_sum():
         if token != TOKEN:
             return json_error(403)
 
-        user_id = request.get_json().get(RequestFields.USER_ID)
-        if not user_id:
-            return json_error(400, description="user_id is required")
+        bot_id = request.get_json().get(RequestFields.SUMM_ID)
+        if not bot_id:
+            return json_error(400, description="summ_id is required")
 
         role = request.get_json().get(RequestFields.ROLE, None)
 
         logger.info(f"bot net: {bot_net}")
 
-        bot = bot_net.get_by_user_id(user_id=user_id)
-        if bot is None:
-            return json_error(400, description="No such bot")
-
-        summ = bot.get_summary()
+        # TODO: make sure bot existed
+        summ = bot_net.summary_repo.get(bot_id=bot_id)
         if summ is None:
             return jsonify({"has_sum": False})
 
