@@ -28,6 +28,8 @@ class EnvConfig:
         self.SUMMARY_INTERVAL = int(self.env_or_panic("SUMMARY_INTERVAL"))
         self.MIN_PROMPT_LEN = int(self.env_or_panic("MIN_PROMPT_LEN"))
         self.RECALL_API_TOKEN = self.env_or_panic("RECALL_API_TOKEN")
+        self.API_KEY_SPEACH_KIT = self.env_or_panic("API_KEY_SPEACH_KIT")
+
         self.AUDIO_WS_PORT = int("5723")
         self.SPEAKER_WS_PORT = int("5724")
 

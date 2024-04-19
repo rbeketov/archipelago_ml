@@ -1,103 +1,40 @@
-import asyncio
-import websockets
-import json
-import os
-import sys
-import logging
-import threading
-import requests
-
-from enum import auto
 from app.config import Config
 from app.http import create_flask_app
-from strenum import StrEnum
+from app.utils import join_all_threads, start_all_threads
 
 from app.meeting_bots import BotNet
+from app.scheduler import Scheduler
+
+from app.websocket import WebSocketServer
 
 from logger import Logger
 
-import schedule
-import time
-
-
 logger = Logger().get_logger(__name__)
 config = Config()
-
-# ----- websocket
-
-"""async def audio_ws_handler(websocket):
-    async for message in websocket:
-        if isinstance(message, str):
-            logger.info(f"audio_handler message: {message}")
-        else:
-            participant_id = int.from_bytes(message[0:4], byteorder='little')
-            with open(f'output/{participant_id}-output.raw', 'ab') as f:
-                f.write(message[4:])
-                logger.info(f"wrote message for {participant_id}")
-
-async def speaker_ws_handler(websocket):
-    async for message in websocket:
-        if isinstance(message, str):
-            json_message = json.loads(message)
-
-            logger.info(f"speaker_handler: {json_message}")
-
-        logger.error(f"speaker_handler: {message}")
-
-
-
-def run_websocket_server(handler, port, ip = "0.0.0.0") -> threading.Thread:
-    def websocket_runner():
-        async def websocket_main():
-            async with websockets.serve(handler, ip, port):
-                await asyncio.Future()
-
-        asyncio.run(websocket_main())
-
-    return threading.Thread(target=websocket_runner)"""
-
-# ----- scheduler
-
-
-def run_scheduler() -> threading.Thread:
-    def scheduler_runner():
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
-
-    return threading.Thread(target=scheduler_runner)
-
-
-# ------ threads
-
-
-def start_all_threads(threads):
-    for thread in threads:
-        thread.start()
-
-
-def join_all_threads(threads):
-    for thread in threads:
-        thread.join()
 
 
 if __name__ == "__main__":
     try:
         bot_net = BotNet(config.bot_config)
 
-        # shed_thr = run_scheduler()
-        # shed_thr.start()
+        scheduler = Scheduler()
 
-        # audio_ws_thr = run_websocket_server(audio_ws_handler, AUDIO_WS_PORT)
-        # audio_ws_thr.start()
+        ws_server_1 = WebSocketServer(
+            config.env.MYSELF_IP_ADRESS,
+            config.env.AUDIO_WS_PORT,
+            bot_net.ws_hooks.audio_ws_handler,
+        )
 
-        # speaker_ws_thr = run_websocket_server(speaker_ws_handler, SPEAKER_WS_PORT)
-        # speaker_ws_thr.start()
+        ws_server_2 = WebSocketServer(
+            config.env.MYSELF_IP_ADRESS,
+            config.env.SPEAKER_WS_PORT,
+            bot_net.ws_hooks.speaker_ws_handler,
+        )
 
         threads = [
-            run_scheduler(),
-            # run_websocket_server(audio_ws_handler, AUDIO_WS_PORT),
-            # run_websocket_server(speaker_ws_handler, SPEAKER_WS_PORT),
+            scheduler,
+            ws_server_1,
+            ws_server_2,
         ]
 
         start_all_threads(threads)

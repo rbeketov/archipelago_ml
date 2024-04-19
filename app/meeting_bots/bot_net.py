@@ -5,6 +5,7 @@ from typing import Dict, Optional, TypedDict
 import schedule
 from app.logger import Logger
 from app.meeting_bots import Bot, BotWebHooks
+from app.meeting_bots.recall_ws_hooks import RecallWsHooks, get_all_recall_ws_hooks
 
 logger = Logger().get_logger(__name__)
 
@@ -30,6 +31,16 @@ class BotNet:
         self.mutex = Lock()
 
         self.config = config
+
+        self.ws_hooks = RecallWsHooks()
+
+    @property
+    def ws_hooks(self) -> RecallWsHooks:
+        return self.ws_hooks
+
+    @property
+    def ws_hooks_all(self) -> list[callable]:
+        return get_all_recall_ws_hooks()
 
     def get_by_user_id(self, user_id: str):
         with self.mutex:
