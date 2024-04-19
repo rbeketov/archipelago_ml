@@ -4,10 +4,9 @@ After=network.target
 
 [Service]
 WorkingDirectory={{ project_dir }}/app
-ExecStart={{ python_interpreter }} {{ project_dir }}/app/routes.py
+ExecStart={{ python_interpreter }} {{ project_dir }}/app/start.py
 
 Restart=always
-RestartSec=120
 
 [Install]
 WantedBy=multi-user.target
