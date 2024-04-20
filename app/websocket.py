@@ -34,7 +34,6 @@ class WebSocketServer(threading.Thread):
         asyncio.set_event_loop(self.loop)
 
         running = True
-        print(self.reboot_time)
         while running:
             try:
                 logger.info(f"Staring websocket server at {self.ip}:{self.port}")

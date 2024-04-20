@@ -36,11 +36,16 @@ class Logger(metaclass=Singleton):
         Logger.handlers = [handlerFile, handlerStdout]
 
     @classmethod
-    def get_logger(cls, package, level=logging.DEBUG, dict_prettier=True):
+    def get_logger(
+        cls,
+        package,
+        level=logging.DEBUG,
+        dict_prettier=True,
+        stack_trace_err_by_default=True,
+    ):
         logger = logging.getLogger(package)
 
-        if dict_prettier:
-            logger = LoggerDictPrettier.from_parent(logger)
+        logger = _Logger.from_parent(logger, dict_prettier, stack_trace_err_by_default)
 
         logger.setLevel(level)
 
@@ -58,9 +63,19 @@ class DictPrettierFormat(dict):
         return json.dumps(dict(self), indent=4)
 
 
-class LoggerDictPrettier(logging.Logger):
-    def __init__(self, *args, **kwargs):
+class _Logger(logging.Logger):
+    def __init__(
+        self, dict_prettier=False, stack_trace_err_by_default=False, *args, **kwargs
+    ):
+        self.dict_prettier = dict_prettier
+        self.stack_trace_err_by_default = stack_trace_err_by_default
         super().__init__(*args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        if self.stack_trace_err_by_default:
+            super().exception(msg, *args, **kwargs)
+        else:
+            super().error(msg, *args, **kwargs)
 
     def makeRecord(
         self,
@@ -75,9 +90,11 @@ class LoggerDictPrettier(logging.Logger):
         extra=None,
         sinfo=None,
     ):
-        new_record_args = [
-            DictPrettierFormat(arg) if isinstance(arg, dict) else arg for arg in args
-        ]
+        new_record_args = (
+            [DictPrettierFormat(arg) if isinstance(arg, dict) else arg for arg in args]
+            if self.dict_prettier
+            else args
+        )
         super_args = (
             name,
             level,
@@ -93,8 +110,18 @@ class LoggerDictPrettier(logging.Logger):
         return super().makeRecord(*super_args)
 
     @classmethod
-    def from_parent(cls, parent_logger_instance: logging.Logger):
-        return cls(name=parent_logger_instance.name, level=parent_logger_instance.level)
+    def from_parent(
+        cls,
+        parent_logger_instance: logging.Logger,
+        dict_prettier=False,
+        stack_trace_err_by_default=False,
+    ):
+        return cls(
+            dict_prettier=dict_prettier,
+            stack_trace_err_by_default=stack_trace_err_by_default,
+            name=parent_logger_instance.name,
+            level=parent_logger_instance.level,
+        )
 
 
 if __name__ == "__main__":
