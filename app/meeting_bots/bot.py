@@ -181,17 +181,17 @@ class Bot:
             return
 
         summ = summary_transf(self.transcription.to_prompt())
-        logger.info(f"make_summary: {summ}")
+        logger.info("make_summary: %s", summ)
 
         if summary_cleaner is not None:
             summ = summary_cleaner(summ)
-            logger.info(f"cleaned_sum: {summ}")
+            logger.info("cleaned_sum: %s", summ)
 
         return None if summ is None else self.transcription.drop_to_summ(summ)
 
     def get_summary(self) -> Optional[str]:
         summ = self.transcription.summ
-        logger.info(f"get_summary: {summ}")
+        logger.info("get_summary: %s", summ)
         if summ == "":
             return None
         return summ
