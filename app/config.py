@@ -30,8 +30,8 @@ class EnvConfig:
         self.RECALL_API_TOKEN = self.__class__.env_or_panic("RECALL_API_TOKEN")
         self.API_KEY_SPEACH_KIT = self.__class__.env_or_panic("API_KEY_SPEACH_KIT")
 
-        self.AUDIO_WS_PORT = int("5723")
-        self.SPEAKER_WS_PORT = int("5724")
+        self.AUDIO_WS_PORT = int("8079")
+        self.SPEAKER_WS_PORT = int("8078")
 
     def env_or_panic(key: str):
         env = os.environ.get(key)
