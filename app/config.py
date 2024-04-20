@@ -47,8 +47,8 @@ def make_bot_config(
         "RECALL_API_TOKEN": recall_api_token,
         "NAME": "ArchipelagoSummer",
         "WEBHOOKS": {
-            "speaker_ws_url": get_ws_url("0.0.0.0", speaker_ws_port),
-            "audio_ws_url": get_ws_url("0.0.0.0", audio_ws_port),
+            "speaker_ws_url": get_ws_url(ip, speaker_ws_port),
+            "audio_ws_url": get_ws_url(ip, audio_ws_port),
             "transcription_url": f"http://{ip}:{port}/transcription",
         },
         "MIN_PROMPT_LEN": min_prompt_len,
