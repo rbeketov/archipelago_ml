@@ -3,8 +3,8 @@ Description=AI POWER
 After=network.target
 
 [Service]
-WorkingDirectory={{ project_dir }}/app
-ExecStart={{ python_interpreter }} {{ project_dir }}/app/start.py
+WorkingDirectory={{ project_dir }}
+ExecStart={{ python_interpreter }} {{ project_dir }}/start.py
 
 Restart=always
 
