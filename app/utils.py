@@ -2,7 +2,7 @@ from requests import Response
 
 
 def get_ws_url(ip, port):
-    return f"ws://{ip}:{port}"
+    return f"wss://{ip}:{port}"
 
 
 class HTTPStatusException(Exception):
