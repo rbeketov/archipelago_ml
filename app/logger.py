@@ -90,6 +90,7 @@ class _Logger(logging.Logger):
         extra=None,
         sinfo=None,
     ):
+        msg = DictPrettierFormat(msg) if isinstance(msg, dict) else msg
         new_record_args = (
             [DictPrettierFormat(arg) if isinstance(arg, dict) else arg for arg in args]
             if self.dict_prettier

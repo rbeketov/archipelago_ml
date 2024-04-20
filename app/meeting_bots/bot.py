@@ -127,7 +127,7 @@ class Bot:
             destination_speaker_url=self.webhooks["speaker_ws_url"],
         ).json()
 
-        logger.debug(resp)
+        logger.debug("%s", resp)
         self.bot_id = resp["id"]
 
         self.join_callback(self)
@@ -174,7 +174,7 @@ class Bot:
         if prompt is None:
             return
 
-        logger.info(f"sync transcrpt: {self.transcript_full(False)}")
+        logger.info("sync transcrpt: %s", self.transcript_full(False))
 
         if len(prompt) < min_prompt_len:
             logger.info(f"prompt less than {min_prompt_len}")
