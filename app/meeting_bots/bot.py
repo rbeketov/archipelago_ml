@@ -1,18 +1,13 @@
-import os
 import re
-import requests
 import json
 from requests import Response
 from app.meeting_bots import RecallApi
 from app.utils import wrap_http_err
-from logger import Logger
+from app.logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
 from functools import reduce
 from threading import Lock
 from collections import defaultdict
-
-import schedule
-from gpt_utils import send_request_to_gpt
 
 logger = Logger().get_logger(__name__)
 

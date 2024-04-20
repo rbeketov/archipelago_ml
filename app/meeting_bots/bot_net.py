@@ -26,17 +26,17 @@ class BotNet:
         # self.jobs_by_bot: Dict[str, List[schedule.Job]] = {}
         self.jobs_by_bot = defaultdict(list)
 
-        logger.info(f"Botnet config: {config}")
+        logger.info("Botnet config %s", config)
 
         self.mutex = Lock()
 
         self.config = config
 
-        self.ws_hooks = RecallWsHooks()
+        self._ws_hooks = RecallWsHooks()
 
     @property
     def ws_hooks(self) -> RecallWsHooks:
-        return self.ws_hooks
+        return self._ws_hooks
 
     @property
     def ws_hooks_all(self) -> list[callable]:

@@ -1,8 +1,8 @@
 import requests
 from typing import Optional
-from logger import Logger
+from app.logger import Logger
 
-from db import ClickClient
+from app.db import ClickClient
 
 
 logger = Logger().get_logger(__name__)
@@ -10,11 +10,10 @@ logger = Logger().get_logger(__name__)
 STOP_RESPONSES = [
     "простите",
     "я не понимаю о чем вы",
-    "я не могу ничего сказать об этом"
-    "давайте сменим тему",
+    "я не могу ничего сказать об этом" "давайте сменим тему",
     "сложно выделить конкретные основные мысли",
     "сложно выделить основные мысли",
-    "диалог не содержит чётко выраженной основной мысли"
+    "диалог не содержит чётко выраженной основной мысли",
 ]
 
 
@@ -25,8 +24,12 @@ def gpt_req_sender(
     temperature: float,
     max_tokens=2000,
 ):
-    def inner(input_text: str,) -> str:
-        return send_request_to_gpt(input_text, model_uri, system_prompt, api_key, temperature, max_tokens)
+    def inner(
+        input_text: str,
+    ) -> str:
+        return send_request_to_gpt(
+            input_text, model_uri, system_prompt, api_key, temperature, max_tokens
+        )
 
     return inner
 
@@ -47,7 +50,7 @@ def send_request_to_gpt(
         "completionOptions": {
             "stream": False,
             "temperature": temperature,
-            "maxTokens": max_tokens
+            "maxTokens": max_tokens,
         },
         "messages": [
             {
@@ -58,7 +61,7 @@ def send_request_to_gpt(
                 "role": "user",
                 "text": input_text,
             },
-        ]
+        ],
     }
 
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
@@ -71,7 +74,7 @@ def send_request_to_gpt(
     logger.debug(f"send_request_to_gpt response: {response.json()}")
 
     try:
-        resp_res = response.json()['result']['alternatives'][0]['message']['text']
+        resp_res = response.json()["result"]["alternatives"][0]["message"]["text"]
     except Exception as e:
         logger.error(f"send_request_to_gpt: {e}")
         return None

@@ -1,4 +1,4 @@
-from enum import StrEnum
+from strenum import StrEnum
 from flask import Blueprint
 from flask import Flask, request, jsonify, abort
 

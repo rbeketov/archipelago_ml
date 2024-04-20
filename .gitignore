@@ -7,3 +7,4 @@
 /audio_data
 **/*.service
 /client
+**/__pycache__

@@ -25,6 +25,9 @@ def start_all_threads(threads):
         thread.start()
 
 
-def join_all_threads(threads):
+def stop_all_threads(threads):
+    for thread in threads:
+        thread.stop()
+
     for thread in threads:
         thread.join()

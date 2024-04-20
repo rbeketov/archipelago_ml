@@ -1,4 +1,6 @@
+import logging
 from flask import Flask
+import flask.cli
 from flask_cors import CORS
 
 from app.meeting_bots import BotNet
@@ -15,5 +17,9 @@ def create_flask_app(bot_net: BotNet):
 
     app.register_blueprint(make_gpt_handler(config))
     app.register_blueprint(make_bot_handler(config, bot_net))
+
+    app.logger.setLevel(logging.ERROR)
+
+    flask.cli.show_server_banner = lambda *args: None
 
     return app

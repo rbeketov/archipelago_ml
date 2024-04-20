@@ -1,4 +1,4 @@
-from enum import StrEnum
+from strenum import StrEnum
 from flask import Blueprint
 from flask import Flask, request, jsonify, abort
 
@@ -12,7 +12,7 @@ from app.meeting_bots import BotNet, Transcription
 logger = Logger().get_logger(__name__)
 
 
-def make_bot_handler(config: Config, bot_net: BotNet):
+def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     bot_blueprint = Blueprint("meeting_bot", __name__)
 
     @bot_blueprint.route("/start_recording", methods=["POST"])
@@ -185,3 +185,5 @@ def make_bot_handler(config: Config, bot_net: BotNet):
 
             json_data = {"summ_text": summ, "has_sum": True}
             return jsonify(json_data)
+
+    return bot_blueprint

@@ -1,4 +1,4 @@
-from enum import StrEnum
+from strenum import StrEnum
 import os
 from app.meeting_bots import BotConfig
 from app.utils import get_ws_url
@@ -19,16 +19,16 @@ class EnvConfig:
     def __init__(self):
         load_dotenv()
 
-        self.API_KEY = self.env_or_panic("API_KEY")
-        self.MODEL_URI_SUMM = self.env_or_panic("MODEL_URI_SUMM")
-        self.MODEL_URI_GPT = self.env_or_panic("MODEL_URI_GPT")
-        self.TOKEN = self.env_or_panic("TOKEN")
-        self.MYSELF_IP_ADRESS = self.env_or_panic("MYSELF_IP_ADRESS")
-        self.MYSELF_PORT = int(self.env_or_panic("MYSELF_PORT"))
-        self.SUMMARY_INTERVAL = int(self.env_or_panic("SUMMARY_INTERVAL"))
-        self.MIN_PROMPT_LEN = int(self.env_or_panic("MIN_PROMPT_LEN"))
-        self.RECALL_API_TOKEN = self.env_or_panic("RECALL_API_TOKEN")
-        self.API_KEY_SPEACH_KIT = self.env_or_panic("API_KEY_SPEACH_KIT")
+        self.API_KEY = self.__class__.env_or_panic("API_KEY")
+        self.MODEL_URI_SUMM = self.__class__.env_or_panic("MODEL_URI_SUMM")
+        self.MODEL_URI_GPT = self.__class__.env_or_panic("MODEL_URI_GPT")
+        self.TOKEN = self.__class__.env_or_panic("TOKEN")
+        self.MYSELF_IP_ADRESS = self.__class__.env_or_panic("MYSELF_IP_ADRESS")
+        self.MYSELF_PORT = int(self.__class__.env_or_panic("MYSELF_PORT"))
+        self.SUMMARY_INTERVAL = int(self.__class__.env_or_panic("SUMMARY_INTERVAL"))
+        self.MIN_PROMPT_LEN = int(self.__class__.env_or_panic("MIN_PROMPT_LEN"))
+        self.RECALL_API_TOKEN = self.__class__.env_or_panic("RECALL_API_TOKEN")
+        self.API_KEY_SPEACH_KIT = self.__class__.env_or_panic("API_KEY_SPEACH_KIT")
 
         self.AUDIO_WS_PORT = int("5723")
         self.SPEAKER_WS_PORT = int("5724")
@@ -75,7 +75,6 @@ class Config:
                 port=env.MYSELF_PORT,
                 min_prompt_len=env.MIN_PROMPT_LEN,
             )
-            cls._prompts = SystemPromts()
 
         return cls._instance
 
@@ -91,5 +90,5 @@ class Config:
         return self._bot_config
 
     @property
-    def prompts() -> SystemPromts:
+    def prompts(self) -> SystemPromts:
         return SystemPromts
