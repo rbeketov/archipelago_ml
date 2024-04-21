@@ -11,9 +11,7 @@ from app.logger import Logger
 logger = Logger().get_logger(__name__)
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-localhost_pem = pathlib.Path("/etc/letsencrypt/live/archipelago.team/").with_name(
-    "fullchain.pem"
-)
+localhost_pem = pathlib.Path("/home/ubuntu").with_name("fullchain1.pem")
 ssl_context.load_verify_locations(localhost_pem)
 
 
