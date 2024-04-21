@@ -30,6 +30,7 @@ class EnvConfig:
         self.RECALL_API_TOKEN = self.__class__.env_or_panic("RECALL_API_TOKEN")
         self.API_KEY_SPEACH_KIT = self.__class__.env_or_panic("API_KEY_SPEACH_KIT")
 
+        self.SERVER_NAME = "archipelago.team"  # TODO
         self.SSL_SERT_PATH = self.__class__.env_or_panic("SSL_SERT_PATH")
         self.SSL_KEY_PATH = self.__class__.env_or_panic("SSL_KEY_PATH")
 
@@ -45,14 +46,20 @@ class EnvConfig:
 
 
 def make_bot_config(
-    recall_api_token, speaker_ws_port, audio_ws_port, ip, port, min_prompt_len
+    recall_api_token,
+    speaker_ws_port,
+    audio_ws_port,
+    ip,
+    server_name,
+    port,
+    min_prompt_len,
 ) -> BotConfig:
     return {
         "RECALL_API_TOKEN": recall_api_token,
         "NAME": "ArchipelagoSummer",
         "WEBHOOKS": {
-            "speaker_ws_url": get_ws_url(ip, speaker_ws_port),
-            "audio_ws_url": get_ws_url(ip, audio_ws_port),
+            "speaker_ws_url": get_ws_url(server_name, speaker_ws_port),
+            "audio_ws_url": get_ws_url(server_name, audio_ws_port),
             "transcription_url": f"http://{ip}:{port}/transcription",
         },
         "MIN_PROMPT_LEN": min_prompt_len,
@@ -76,6 +83,7 @@ class Config:
                 speaker_ws_port=env.SPEAKER_WS_PORT,
                 audio_ws_port=env.AUDIO_WS_PORT,
                 ip=env.MYSELF_IP_ADRESS,
+                server_name=env.SERVER_NAME,
                 port=env.MYSELF_PORT,
                 min_prompt_len=env.MIN_PROMPT_LEN,
             )
