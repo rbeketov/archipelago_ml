@@ -2,7 +2,6 @@ import re
 import json
 from requests import Response
 from .recall_api import RecallApi
-from ..meeting_bots import RealTimeAudio
 from ..logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
 from functools import reduce
@@ -99,6 +98,7 @@ class BotWebHooks(TypedDict):
 
 
 class Bot:
+    from ..meeting_bots import RealTimeAudio
     def __init__(
         self,
         user_id,
