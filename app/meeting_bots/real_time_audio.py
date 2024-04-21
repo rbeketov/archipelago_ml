@@ -2,7 +2,6 @@ import queue
 from threading import Lock
 from ..audio import AudioFileManager, AudioRaw, AudioConverter
 from ..speach_kit import YaSpeechToText
-from ..meeting_bots import Transcription
 
 
 class SpeakerEvent:
@@ -15,6 +14,7 @@ class SpeakerEvent:
 
 
 class RealTimeAudio:
+    from ..meeting_bots import Transcription
     def __init__(self, bot_id, speech_kit: YaSpeechToText):
         self.audio_file_manager = AudioFileManager(bot_id)
         self.events_queue: list[SpeakerEvent] = []
