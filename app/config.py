@@ -1,6 +1,6 @@
 from strenum import StrEnum
 import os
-from app.meeting_bots import BotConfig
+from .meeting_bots import BotConfig
 from app.utils import get_ws_url
 from dotenv import load_dotenv
 
