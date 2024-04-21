@@ -11,9 +11,11 @@ from app.logger import Logger
 logger = Logger().get_logger(__name__)
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-localhost_pem = pathlib.Path("/home/ubuntu/fullchain1.pem")
-print(localhost_pem)
-ssl_context.load_verify_locations(localhost_pem)
+pem = pathlib.Path("/home/ubuntu/fullchain1.pem")
+key = pathlib.Path("/home/ubuntu/privkey1.pem")
+print(pem, key)
+ssl_context.load_cert_chain(pem, keyfile=key)
+# ssl_context.load_verify_locations(pem, key=)
 
 
 class WebSocketServer(threading.Thread):
