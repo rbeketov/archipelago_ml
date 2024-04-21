@@ -10,7 +10,7 @@ from app.logger import Logger
 
 logger = Logger().get_logger(__name__)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 pem = pathlib.Path("/home/ubuntu/fullchain1.pem")
 key = pathlib.Path("/home/ubuntu/privkey1.pem")
 print(pem, key)
