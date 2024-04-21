@@ -12,13 +12,20 @@ logger = Logger().get_logger(__name__)
 
 class WebSocketServer(threading.Thread):
     def __init__(
-        self, ip, port, ws_serve: callable, reboot_time=None, ssl_context=None
+        self,
+        ip,
+        port,
+        ws_serve: callable,
+        reboot_time=None,
+        ssl_context=None,
+        debug=False,
     ):
         self.ip = ip
         self.port = port
         self.ws_serve = ws_serve
         self.reboot_time = reboot_time
         self.ssl_context = ssl_context
+        self.debug = debug
 
         self.ws_server_stop = None
         self.ws_server_task: asyncio.Task = None
@@ -27,17 +34,23 @@ class WebSocketServer(threading.Thread):
         threading.Thread.__init__(self)
 
     async def _start_ws_server(self):
+        logger = (
+            Logger().get_logger(
+                __name__,
+                logging.DEBUG,
+                dict_prettier=False,
+                stack_trace_err_by_default=False,
+            )
+            if self.debug
+            else None
+        )
+
         server = await websockets.serve(
             self.ws_serve,
             self.ip,
             self.port,
             ssl=self.ssl_context,
-            logger=Logger().get_logger(
-                __name__,
-                logging.DEBUG,
-                dict_prettier=False,
-                stack_trace_err_by_default=False,
-            ),
+            logger=logger,
         )
         await self.ws_server_stop
         server.close()
