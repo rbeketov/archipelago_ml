@@ -1,8 +1,8 @@
 import re
 import json
 from requests import Response
-from app.meeting_bots.recall_api import RecallApi
-from app.meeting_bots.real_time_audio import RealTimeAudio
+from .recall_api import RecallApi
+from .real_time_audio import RealTimeAudio
 from app.utils import wrap_http_err
 from app.logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
