@@ -73,7 +73,10 @@ class _Logger(logging.Logger):
 
     def error(self, msg, *args, **kwargs):
         if self.stack_trace_err_by_default:
-            super().exception(msg, *args, **kwargs)
+            # super().exception(msg, *args, **kwargs)
+
+            super().error(msg, *args, exc_info=True, **kwargs)
+
         else:
             super().error(msg, *args, **kwargs)
 
