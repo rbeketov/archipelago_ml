@@ -67,7 +67,7 @@ class AudioFileManager:
         self.bot_id = bot_id
         self.mutex = Lock()
 
-    def save_segment(self, audio: ReadableBuffer):
+    def save_segment(self, audio):
         with self.mutex:
             with open(self.audio_file.file_path, "ab") as f:
                 f.write(audio)
