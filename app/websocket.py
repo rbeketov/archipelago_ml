@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import pathlib
-import ssl
 import threading
 import time
 
@@ -11,20 +9,16 @@ from app.logger import Logger
 
 logger = Logger().get_logger(__name__)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-pem = pathlib.Path("/home/ubuntu/fullchain1.pem")
-key = pathlib.Path("/home/ubuntu/privkey1.pem")
-print(pem, key)
-ssl_context.load_cert_chain(pem, keyfile=key)
-# ssl_context.load_verify_locations(pem, key=)
-
 
 class WebSocketServer(threading.Thread):
-    def __init__(self, ip, port, ws_serve: callable, reboot_time=None):
+    def __init__(
+        self, ip, port, ws_serve: callable, reboot_time=None, ssl_context=None
+    ):
         self.ip = ip
         self.port = port
         self.ws_serve = ws_serve
         self.reboot_time = reboot_time
+        self.ssl_context = ssl_context
 
         self.ws_server_stop = None
         self.ws_server_task: asyncio.Task = None
@@ -37,7 +31,7 @@ class WebSocketServer(threading.Thread):
             self.ws_serve,
             self.ip,
             self.port,
-            ssl=ssl_context,
+            ssl=self.ssl_context,
             logger=Logger().get_logger(
                 __name__,
                 logging.DEBUG,

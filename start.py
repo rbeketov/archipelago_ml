@@ -1,6 +1,7 @@
+import pathlib
 from app.config import Config
 from app.http import create_flask_app
-from app.utils import stop_all_threads, start_all_threads
+from app.utils import stop_all_threads, start_all_threads, make_ssl_context
 
 from app.meeting_bots import BotNet
 from app.scheduler import Scheduler
@@ -19,11 +20,16 @@ if __name__ == "__main__":
 
         scheduler = Scheduler()
 
+        ssl_context = make_ssl_context(
+            pathlib.Path(config.env.SSL_SERT_PATH),
+            pathlib.Path(config.env.SSL_KEY_PATH),
+        )
         ws_server_1 = WebSocketServer(
             "0.0.0.0",
             config.env.AUDIO_WS_PORT,
             bot_net.ws_hooks.audio_ws_handler_combined,
             reboot_time=None,
+            ssl_context=ssl_context,
         )
 
         ws_server_2 = WebSocketServer(
@@ -31,6 +37,7 @@ if __name__ == "__main__":
             config.env.SPEAKER_WS_PORT,
             bot_net.ws_hooks.speaker_ws_handler,
             reboot_time=None,
+            ssl_context=ssl_context,
         )
 
         threads = [

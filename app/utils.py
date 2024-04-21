@@ -1,3 +1,5 @@
+import pathlib
+import ssl
 from requests import Response
 
 
@@ -31,3 +33,9 @@ def stop_all_threads(threads):
 
     for thread in threads:
         thread.join()
+
+
+def make_ssl_context(sert_path, key_path):
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain(sert_path, keyfile=key_path)
+    return ssl_context

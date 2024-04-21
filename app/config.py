@@ -30,6 +30,9 @@ class EnvConfig:
         self.RECALL_API_TOKEN = self.__class__.env_or_panic("RECALL_API_TOKEN")
         self.API_KEY_SPEACH_KIT = self.__class__.env_or_panic("API_KEY_SPEACH_KIT")
 
+        self.SSL_SERT_PATH = self.__class__.env_or_panic("SSL_SERT_PATH")
+        self.SSL_KEY_PATH = self.__class__.env_or_panic("SSL_KEY_PATH")
+
         self.FFMPEG_PATH = self.__class__.env_or_panic("FFMPEG_PATH")  # /usr/bin/ffmpeg
         self.AUDIO_WS_PORT = int("8079")
         self.SPEAKER_WS_PORT = int("8078")
