@@ -7,7 +7,7 @@ from .bot import (
     Bot,
 )
 from .bot_net import BotConfig, BotNet
-from .real_time_audio import RealTimeAudio
+# from .real_time_audio import RealTimeAudio
 
 __all__ = [
     "RecallApi",
@@ -18,5 +18,5 @@ __all__ = [
     "Bot",
     "BotConfig",
     "BotNet",
-    "RealTimeAudio",
+    # "RealTimeAudio",
 ]
