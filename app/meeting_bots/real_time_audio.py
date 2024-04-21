@@ -2,7 +2,7 @@ import queue
 from threading import Lock
 from ..audio import AudioFileManager, AudioRaw, AudioConverter
 from ..speach_kit import YaSpeechToText
-from .bot import Transcription
+from ..meeting_bots import Transcription
 
 
 class SpeakerEvent:
