@@ -2,7 +2,7 @@ import re
 import json
 from requests import Response
 from .recall_api import RecallApi
-from .real_time_audio import RealTimeAudio
+from ..meeting_bots import RealTimeAudio
 from ..logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
 from functools import reduce
