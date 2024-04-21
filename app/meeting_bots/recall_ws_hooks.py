@@ -23,11 +23,11 @@ class RecallWsHooks:
             if isinstance(
                 message, str
             ):  # {"protocol_version": 1, "bot_id": "YOUR-BOT-ID-HERE", "separate_streams": false}
-                print(message)
+                logger.info(f"audio_handler message: {message}")
             else:
                 with open("output/output.raw", "ab") as f:
                     f.write(message)
-                    print("wrote message")
+                    logger.info(f"audio_handler message: wrote {len(message)} bytes")
 
     @staticmethod
     async def speaker_ws_handler(websocket, path):
@@ -37,7 +37,7 @@ class RecallWsHooks:
 
                 logger.info(f"speaker_handler: {json_message}")
 
-            logger.error(f"speaker_handler: {message}")
+            # logger.error(f"speaker_handler: {message}")
 
 
 def get_all_recall_ws_hooks():
