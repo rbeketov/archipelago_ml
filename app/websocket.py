@@ -33,7 +33,11 @@ class WebSocketServer(threading.Thread):
 
     async def _start_ws_server(self):
         server = await websockets.serve(
-            self.ws_serve, self.ip, self.port, ssl=ssl_context
+            self.ws_serve,
+            self.ip,
+            self.port,
+            ssl=ssl_context,
+            logger=logger,
         )
         await self.ws_server_stop
         server.close()
