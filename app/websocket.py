@@ -5,7 +5,7 @@ import time
 
 import websockets
 
-from app.logger import Logger
+from .logger import Logger
 
 logger = Logger().get_logger(__name__)
 

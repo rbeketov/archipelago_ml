@@ -1,7 +1,7 @@
 from flask import jsonify
 
-from app.logger import Logger
-from app.utils import HTTPStatusException
+from ..logger import Logger
+from ..utils import HTTPStatusException
 
 logger = Logger().get_logger(__name__)
 

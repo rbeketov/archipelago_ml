@@ -1,8 +1,8 @@
 import requests
 from typing import Optional
-from app.logger import Logger
+from .logger import Logger
 
-from app.db import ClickClient
+from .db import ClickClient
 
 
 logger = Logger().get_logger(__name__)

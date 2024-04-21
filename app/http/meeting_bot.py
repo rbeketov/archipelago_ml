@@ -2,12 +2,12 @@ from strenum import StrEnum
 from flask import Blueprint
 from flask import Flask, request, jsonify, abort
 
-from app.config import Config
-from app.gpt_utils import gpt_req_sender, send_request_to_gpt
-from app.http.utils import json_error, HttpException400
-from app.logger import Logger
+from ..config import Config
+from ..gpt_utils import gpt_req_sender, send_request_to_gpt
+from .utils import json_error, HttpException400
+from ..logger import Logger
 
-from app.meeting_bots import BotNet, Transcription
+from ..meeting_bots import BotNet, Transcription
 
 logger = Logger().get_logger(__name__)
 

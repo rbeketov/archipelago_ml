@@ -1,7 +1,7 @@
 import queue
 from threading import Lock
-from app.audio import AudioFileManager, AudioRaw, AudioConverter
-from app.speach_kit import YaSpeechToText
+from ..audio import AudioFileManager, AudioRaw, AudioConverter
+from ..speach_kit import YaSpeechToText
 from .bot import Transcription
 
 

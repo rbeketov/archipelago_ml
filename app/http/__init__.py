@@ -3,8 +3,8 @@ from flask import Flask
 import flask.cli
 from flask_cors import CORS
 
-from app.meeting_bots import BotNet
-from app.config import Config
+from ..meeting_bots import BotNet
+from ..config import Config
 
 
 def create_flask_app(bot_net: BotNet):

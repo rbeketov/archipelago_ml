@@ -2,7 +2,7 @@ import json
 from typing import Optional
 
 import websockets
-from app.logger import Logger
+from ..logger import Logger
 from .bot_net import BotNet, RealTimeAudio
 
 

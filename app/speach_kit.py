@@ -1,9 +1,8 @@
 import os
 import requests
 from typing import Optional
-from app.audio import AudioConverter
 
-from app.logger import Logger
+from .logger import Logger
 from dotenv import load_dotenv
 
 logger = Logger().get_logger(__name__)

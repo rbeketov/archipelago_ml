@@ -5,8 +5,8 @@ from typing import Dict, Optional, TypedDict
 import schedule
 from app.logger import Logger
 from .bot import Bot, BotWebHooks
-from .recall_ws_hooks import RecallWsHooks, get_all_recall_ws_hooks
-from app.speach_kit import YaSpeechToText
+from .recall_ws_hooks import RecallWsHooks
+from ..speach_kit import YaSpeechToText
 
 logger = Logger().get_logger(__name__)
 

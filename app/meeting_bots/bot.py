@@ -3,13 +3,12 @@ import json
 from requests import Response
 from .recall_api import RecallApi
 from .real_time_audio import RealTimeAudio
-from app.utils import wrap_http_err
-from app.logger import Logger
+from ..logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
 from functools import reduce
 from threading import Lock
 from collections import defaultdict
-from app.speach_kit import YaSpeechToText
+from ..speach_kit import YaSpeechToText
 
 logger = Logger().get_logger(__name__)
 

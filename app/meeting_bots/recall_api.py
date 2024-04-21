@@ -1,5 +1,5 @@
 import requests
-from app.utils import wrap_http_err
+from ..utils import wrap_http_err
 
 
 class RecallApiBase:

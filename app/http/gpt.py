@@ -2,10 +2,10 @@ from strenum import StrEnum
 from flask import Blueprint
 from flask import Flask, request, jsonify, abort
 
-from app.config import Config
-from app.gpt_utils import send_request_to_gpt
-from app.http.utils import HttpException400, json_error
-from app.logger import Logger
+from ..config import Config
+from ..gpt_utils import send_request_to_gpt
+from .utils import HttpException400, json_error
+from ..logger import Logger
 
 from enum import auto
 
