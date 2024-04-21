@@ -1,13 +1,14 @@
 import re
 import json
 from requests import Response
-from app.meeting_bots import RecallApi
+from app.meeting_bots import RecallApi, RealTimeAudio
 from app.utils import wrap_http_err
 from app.logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
 from functools import reduce
 from threading import Lock
 from collections import defaultdict
+from app.speach_kit import YaSpeechToText
 
 logger = Logger().get_logger(__name__)
 
@@ -104,9 +105,12 @@ class Bot:
         recall_api_token,
         bot_name,
         webhooks: BotWebHooks,
+        speech_kit: YaSpeechToText,
         join_callback: callable = lambda _: _,
         leave_callback: callable = lambda _: _,
     ):
+        self.speech_kit = speech_kit
+        self.real_time_audio = None
         self.bot_name = bot_name
         self.webhooks = webhooks
         self.recall_api = RecallApi(recall_api_token=recall_api_token)
@@ -116,6 +120,10 @@ class Bot:
 
         self.join_callback = join_callback
         self.leave_callback = leave_callback
+
+    @property
+    def real_time_audio(self) -> Optional[RealTimeAudio]:
+        return self.real_time_audio
 
     def join_and_start_recording(self, meeting_url):
         logger.debug("Before start_recording")
@@ -129,6 +137,8 @@ class Bot:
 
         logger.debug("%s", resp)
         self.bot_id = resp["id"]
+
+        self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
         self.join_callback(self)
 
