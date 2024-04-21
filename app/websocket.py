@@ -1,4 +1,6 @@
 import asyncio
+import pathlib
+import ssl
 import threading
 import time
 
@@ -7,6 +9,12 @@ import websockets
 from app.logger import Logger
 
 logger = Logger().get_logger(__name__)
+
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+localhost_pem = pathlib.Path("/etc/letsencrypt/live/archipelago.team/").with_name(
+    "fullchain.pem"
+)
+ssl_context.load_verify_locations(localhost_pem)
 
 
 class WebSocketServer(threading.Thread):
@@ -23,7 +31,9 @@ class WebSocketServer(threading.Thread):
         threading.Thread.__init__(self)
 
     async def _start_ws_server(self):
-        server = await websockets.serve(self.ws_serve, self.ip, self.port)
+        server = await websockets.serve(
+            self.ws_serve, self.ip, self.port, ssl=ssl_context
+        )
         await self.ws_server_stop
         server.close()
         logger.info(f"Web Socket server (port={self.port}) is shutting down")

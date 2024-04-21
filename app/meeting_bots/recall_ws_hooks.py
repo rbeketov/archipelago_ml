@@ -7,7 +7,7 @@ logger = Logger().get_logger(__name__)
 
 class RecallWsHooks:
     @staticmethod
-    async def audio_ws_handler(websocket, path):
+    async def audio_ws_handler_separate(websocket, path):
         async for message in websocket:
             if isinstance(message, str):
                 logger.info(f"audio_handler message: {message}")
@@ -16,6 +16,15 @@ class RecallWsHooks:
                 with open(f"output/{participant_id}-output.raw", "ab") as f:
                     f.write(message[4:])
                     logger.info(f"wrote message for {participant_id}")
+
+    async def echo(websocket, path):
+        async for message in websocket:
+            if isinstance(message, str):
+                print(message)
+            else:
+                with open(f"output/output.raw", "ab") as f:
+                    f.write(message)
+                    print("wrote message")
 
     @staticmethod
     async def speaker_ws_handler(websocket, path):
