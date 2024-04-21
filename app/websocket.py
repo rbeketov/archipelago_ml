@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import pathlib
 import ssl
 import threading
@@ -37,7 +38,12 @@ class WebSocketServer(threading.Thread):
             self.ip,
             self.port,
             ssl=ssl_context,
-            logger=logger,
+            logger=Logger().get_logger(
+                __name__,
+                logging.DEBUG,
+                dict_prettier=False,
+                stack_trace_err_by_default=False,
+            ),
         )
         await self.ws_server_stop
         server.close()
