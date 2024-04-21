@@ -4,7 +4,7 @@ from typing import Dict, Optional, TypedDict
 
 import schedule
 from app.logger import Logger
-from app.meeting_bots import Bot, BotWebHooks
+from app.meeting_bots.bot import Bot, BotWebHooks
 from app.meeting_bots.recall_ws_hooks import RecallWsHooks, get_all_recall_ws_hooks
 from app.speach_kit import YaSpeechToText
 

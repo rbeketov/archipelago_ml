@@ -1,7 +1,7 @@
 import re
 import json
 from requests import Response
-from app.meeting_bots import RecallApi, RealTimeAudio
+from app.meeting_bots.recall_api import RecallApi, RealTimeAudio
 from app.utils import wrap_http_err
 from app.logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
