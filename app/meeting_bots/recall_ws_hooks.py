@@ -3,7 +3,7 @@ from typing import Optional
 
 import websockets
 from app.logger import Logger
-from app.meeting_bots import BotNet, RealTimeAudio
+from app.meeting_bots.bot_net import BotNet, RealTimeAudio
 
 
 logger = Logger().get_logger(__name__)

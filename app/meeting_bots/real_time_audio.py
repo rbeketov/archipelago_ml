@@ -3,7 +3,6 @@ from threading import Lock
 from app.audio import AudioFileManager, AudioRaw, AudioConverter
 from app.speach_kit import YaSpeechToText
 from app.meeting_bots.bot import Transcription
-from _typeshed import ReadableBuffer
 
 
 class SpeakerEvent:
@@ -28,7 +27,7 @@ class RealTimeAudio:
         with self.mutex:
             self.events_queue.append(SpeakerEvent(speaker=speaker, unmute_ts=unmute_ts))
 
-    def save_segment(self, audio: ReadableBuffer):
+    def save_segment(self, audio):
         self.audio_file_manager.save_segment(audio)
 
     def flush_to_transcripts(self) -> list[Transcription]:
