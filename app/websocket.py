@@ -11,7 +11,7 @@ from app.logger import Logger
 logger = Logger().get_logger(__name__)
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-localhost_pem = pathlib.Path("/home/ubuntu/").with_name("fullchain1.pem")
+localhost_pem = pathlib.Path("/home/ubuntu/fullchain1.pem")
 print(localhost_pem)
 ssl_context.load_verify_locations(localhost_pem)
 
