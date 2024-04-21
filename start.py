@@ -22,7 +22,7 @@ if __name__ == "__main__":
         ws_server_1 = WebSocketServer(
             "0.0.0.0",
             config.env.AUDIO_WS_PORT,
-            bot_net.ws_hooks.audio_ws_handler,
+            bot_net.ws_hooks.audio_ws_handler_combined,
             reboot_time=None,
         )
 

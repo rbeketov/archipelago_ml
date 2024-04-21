@@ -17,14 +17,14 @@ class RecallWsHooks:
                     f.write(message[4:])
                     logger.info(f"wrote message for {participant_id}")
 
-    async def echo(websocket, path):
+    async def audio_ws_handler_combined(websocket, path):
         async for message in websocket:
             if isinstance(
                 message, str
             ):  # {"protocol_version": 1, "bot_id": "YOUR-BOT-ID-HERE", "separate_streams": false}
                 print(message)
             else:
-                with open(f"output/output.raw", "ab") as f:
+                with open("output/output.raw", "ab") as f:
                     f.write(message)
                     print("wrote message")
 
