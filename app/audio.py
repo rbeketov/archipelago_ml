@@ -1,7 +1,11 @@
 from threading import Lock
 from pydub import AudioSegment
 import io
-from _typeshed import ReadableBuffer
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from _typeshed import ReadableBuffer
 
 from app.logger import Logger
 
