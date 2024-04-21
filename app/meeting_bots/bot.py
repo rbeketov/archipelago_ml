@@ -98,7 +98,7 @@ class BotWebHooks(TypedDict):
 
 
 class Bot:
-    from ..meeting_bots.real_time_audio import RealTimeAudio
+    from .real_time_audio import RealTimeAudio
     def __init__(
         self,
         user_id,
