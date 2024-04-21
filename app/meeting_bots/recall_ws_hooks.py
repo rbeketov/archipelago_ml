@@ -17,6 +17,7 @@ class RecallWsHooks:
                     f.write(message[4:])
                     logger.info(f"wrote message for {participant_id}")
 
+    @staticmethod
     async def audio_ws_handler_combined(websocket, path):
         async for message in websocket:
             if isinstance(
