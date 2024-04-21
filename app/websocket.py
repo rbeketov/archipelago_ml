@@ -34,7 +34,7 @@ class WebSocketServer(threading.Thread):
         threading.Thread.__init__(self)
 
     async def _start_ws_server(self):
-        logger = (
+        _logger = (
             Logger().get_logger(
                 __name__,
                 logging.DEBUG,
@@ -50,7 +50,7 @@ class WebSocketServer(threading.Thread):
             self.ip,
             self.port,
             ssl=self.ssl_context,
-            logger=logger,
+            logger=_logger,
         )
         await self.ws_server_stop
         server.close()
