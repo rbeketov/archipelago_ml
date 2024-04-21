@@ -1,7 +1,7 @@
 from .recall_api import RecallApi
 from .bot import (
     SpeakerTranscription,
-    Transcription,
+    # Transcription,
     FullTranscription,
     BotWebHooks,
     Bot,
@@ -12,7 +12,7 @@ from .bot_net import BotConfig, BotNet
 __all__ = [
     "RecallApi",
     "SpeakerTranscription",
-    "Transcription",
+    # "Transcription",
     "FullTranscription",
     "BotWebHooks",
     "Bot",
