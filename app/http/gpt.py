@@ -22,6 +22,7 @@ class RequestFields(StrEnum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
     TEMPERATURE = "temperature"
+    SUMMARY_DETAIL = "summary_detail"
 
 
 def make_gpt_handler(config: Config):
@@ -60,11 +61,17 @@ def make_gpt_handler(config: Config):
     def get_summarize():
         print(request)
         with HttpException400(logger=logger):
+            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(
+                request.get_json().get(RequestFields.SUMMARY_DETAIL)
+            )
+            if summary_detail_prompt is None:
+                json_error(400, description="summary_detail is invalid")
+
             return process_request(
                 request=request.json,
                 model_uri=config.env.MODEL_URI_SUMM,
                 name_parent_endpoint=EndPoint.SUMMARAIZE,
-                system_prompt=config.prompts.SUMMARAIZE,
+                system_prompt=summary_detail_prompt,
                 tokens_depends_on_req=True,
             )
 

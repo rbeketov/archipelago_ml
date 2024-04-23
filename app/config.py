@@ -1,3 +1,4 @@
+from typing import Union
 from strenum import StrEnum
 import os
 from .meeting_bots import BotConfig
@@ -5,10 +6,27 @@ from .utils import get_ws_url
 from dotenv import load_dotenv
 
 
+def summarization_with_detail(
+    agree_detail: Union["Средняя" | "Краткая" | "Развёрнутая"] = "Средняя",
+):
+    aggree_detail_conv: dict = {
+        "Средняя": ".",
+        "Краткая": " двумя или тремя предложениями",
+        "Развёрнутая": " подробно",
+    }
+
+    aggree_detail_prompt = aggree_detail_conv.get(agree_detail, None)
+    if aggree_detail_prompt is None:
+        return None
+
+    return f"Выдели основные мысли из диалога{aggree_detail_prompt}"
+
+
 class SystemPromts(StrEnum):
-    SUMMARAIZE = "Выдели основные мысли из диалога."
+    SUMMARAIZE = summarization_with_detail("Средняя")
     CLEAN_SUMMARIZATION = "Оставь только главное в тексте"
     STYLE = lambda role: f"Стилизуй текст в роли {role}"  # noqa: E731
+    SUMMARAIZE_WITH_DETAIL = summarization_with_detail
 
     SUMMARAIZE_OLD = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"

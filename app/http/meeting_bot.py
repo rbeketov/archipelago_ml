@@ -21,6 +21,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             USER_ID = "user_id"
             MEETING_URL = "url"
             TOKEN_VALUE = "token"
+            SUMMARY_DETAIL = "summary_detail"
 
         with HttpException400(logger=logger):
             logger.info(f"get req: {request.json}")
@@ -31,6 +32,12 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             token = request.json[RequestFields.TOKEN_VALUE]
             if token != config.env.TOKEN:
                 return json_error(403)
+
+            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(
+                request.get_json().get(RequestFields.SUMMARY_DETAIL)
+            )
+            if summary_detail_prompt is None:
+                json_error(400, description="summary_detail is invalid")
 
             meeting_url = request.get_json().get(RequestFields.MEETING_URL)
             if not meeting_url:
@@ -44,7 +51,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 user_id,
                 gpt_req_sender(
                     config.env.MODEL_URI_GPT,
-                    config.prompts.SUMMARAIZE,
+                    summary_detail_prompt,
                     config.env.API_KEY,
                     0,
                 ),
