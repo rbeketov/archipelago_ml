@@ -44,6 +44,12 @@ RECALL_API_TOKEN = env_or_panic("RECALL_API_TOKEN")
 AUDIO_WS_PORT = int("5723")
 SPEAKER_WS_PORT = int("5724")
 
+AGREE_DETAIL: dict = {
+    "Средняя": ".",
+    "Краткая": " двумя или тремя предложениями",
+    "Развёрнутая": " подробно",
+}
+
 def get_ws_url(ip, port):
     return f"ws://{ip}:{port}"
 
@@ -65,10 +71,11 @@ class RequestFields(StrEnum):
     TOKEN_VALUE = "token"
     TEXT_VALUE = "text"
     TEMPERATURE = "temperature"
+    AGREE_DETAIL = "agree_detail"
 
 
 class SystemPromts(StrEnum):
-    SUMMARAIZE = "Выдели основные мысли из диалога."
+    SUMMARAIZE = lambda agree_detail: f"Выдели основные мысли из диалога{agree_detail}"
     CLEAN_SUMMARIZATION = "Оставь только главное в тексте"
     STYLE = lambda role: f"Стилизуй текст в роли {role}"
 
@@ -120,11 +127,13 @@ def process_request(
 def get_summarize():
     print(request)
     try:
+        agree_detail = AGREE_DETAIL(request.json[RequestFields.AGREE_DETAIL])
+
         return process_request(
             request=request.json,
             model_uri=MODEL_URI_SUMM,
             name_parent_endpoint=EndPoint.SUMMARAIZE,
-            system_prompt=SystemPromts.SUMMARAIZE,
+            system_prompt=SystemPromts.SUMMARAIZE(agree_detail),
             tokens_depends_on_req=True,
         )
     except Exception as e:
@@ -199,6 +208,10 @@ def start_recording():
             return json_error(400, description="meeting_url is required")
 
         user_id = request.get_json().get(RequestFields.USER_ID)
+        getted_agree_detail = request.get_json().get(RequestFields.AGREE_DETAIL)
+        if not getted_agree_detail:
+            return json_error(400, description=f"{RequestFields.AGREE_DETAIL} is required")
+        agree_detail = AGREE_DETAIL(getted_agree_detail)
         if not user_id:
             return json_error(400, description="user_id is required")
 
@@ -206,7 +219,7 @@ def start_recording():
             user_id,
             gpt_req_sender(
                 MODEL_URI_GPT,
-                SystemPromts.SUMMARAIZE,
+                SystemPromts.SUMMARAIZE(agree_detail),
                 API_KEY,
                 0,
             ),
