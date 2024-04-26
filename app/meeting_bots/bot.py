@@ -94,9 +94,10 @@ class FullTranscription:
 
 # ---- SummaryRepo
 class SummaryRepo:
-    def __init__(self, save_endp, get_endp):
+    def __init__(self, save_endp, get_endp, finish_endp):
         self.save_endp = save_endp
         self.get_endp = get_endp
+        self.finish_endp = finish_endp
 
     def save(self, summary: str, bot_id) -> bool:
         try:
@@ -121,6 +122,15 @@ class SummaryRepo:
             logger.error("failed to get summary:", e)
 
         return None
+
+    def finish(self, bot_id) -> bool:
+        try:
+            resp = requests.get(f"{self.finish_endp}/{bot_id}")
+        except Exception as e:
+            logger.error("failed to finish summary:", e)
+            return False
+
+        return resp.status_code == 200
 
 
 # ----- Bot
@@ -158,7 +168,7 @@ class Bot:
         self.leave_callback = leave_callback
 
     @property
-    def real_time_audio(self) -> Optional[RealTimeAudio]:
+    def real_time_audio(self) -> Optional["RealTimeAudio"]:
         return self.real_time_audio
 
     def join_and_start_recording(self, meeting_url):

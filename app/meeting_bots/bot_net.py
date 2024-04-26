@@ -4,8 +4,9 @@ from typing import Dict, Optional, TypedDict
 
 import schedule
 from app.logger import Logger
-from .bot import Bot, BotWebHooks
+from .bot import Bot, BotWebHooks, SummaryRepo  # TODO: SummaryRepo maybe cyclic
 from ..speach_kit import YaSpeechToText
+from .recall_ws_hooks import RecallWsHooks  # TODO: maybe cyclic
 
 logger = Logger().get_logger(__name__)
 
@@ -19,12 +20,11 @@ class BotConfig(TypedDict):
     FFMPEG_PATH: str
     SUMM_SAVER_ENDP: str
     SUMM_GETTER_ENDP: str
+    SUMM_FINISHER_ENDP: str
 
 
 # bot can be accessed by user id (string)
 class BotNet:
-    from .recall_ws_hooks import RecallWsHooks
-
     def __init__(self, config: BotConfig):
         self.botnet: Dict[str, Bot] = {}
         self.user_id_by_bot_id = {}
@@ -43,6 +43,7 @@ class BotNet:
         self.summary_repo = SummaryRepo(
             save_endp=self.config["SUMM_SAVER_ENDP"],
             get_endp=self.config["SUMM_GETTER_ENDP"],
+            finish_endp=self.config["SUMM_FINISHER_ENDP"],
         )
 
         self.speech_kit = YaSpeechToText(
@@ -89,6 +90,9 @@ class BotNet:
         def leave_callback(bot: Bot):
             with self.mutex:
                 logger.info("leaving")
+
+                bot.summary_repo.finish(bot_id=bot.bot_id)
+
                 self.botnet.pop(bot.user_id, None)
                 self.user_id_by_bot_id.pop(bot.bot_id, None)
 
@@ -134,10 +138,10 @@ class BotNet:
                     summary_scheduler
                 )
                 # job2 = schedule.every(20).seconds.do(transcript_scheduler)
-                # job3 = schedule.every(30).seconds.do(check_stop_schedurer)
+                job3 = schedule.every(30).seconds.do(check_stop_schedurer)
 
                 # self.jobs_by_bot[bot.bot_id].extend([job1, job2, job3])
-                self.jobs_by_bot[bot.bot_id].extend([job1])
+                self.jobs_by_bot[bot.bot_id].extend([job1, job3])
 
         return Bot(
             user_id=user_id,

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 
 def summarization_with_detail(
-    agree_detail: Union["Средняя" | "Краткая" | "Развёрнутая"] = "Средняя",
+    agree_detail: str = "Средняя",
 ):
     aggree_detail_conv: dict = {
         "Средняя": ".",
@@ -85,6 +85,7 @@ def make_bot_config(
         "MIN_PROMPT_LEN": min_prompt_len,
         "SUMM_GETTER_ENDP": f"http://{ip}:{notes_port}/get",
         "SUMM_SAVER_ENDP": f"http://{ip}:{notes_port}/save",
+        "SUMM_FINISHER_ENDP": f"http://{ip}:{notes_port}/finish",
     }
 
 
