@@ -40,7 +40,7 @@ class EnvConfig:
 
     def env_or_panic(key: str):
         env = os.environ.get(key)
-        if env == "":
+        if env == "" or env is None:
             raise Exception(f"{key} not set")
         return env
 

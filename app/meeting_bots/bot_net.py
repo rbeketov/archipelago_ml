@@ -5,7 +5,6 @@ from typing import Dict, Optional, TypedDict
 import schedule
 from app.logger import Logger
 from .bot import Bot, BotWebHooks
-from .recall_ws_hooks import RecallWsHooks
 from ..speach_kit import YaSpeechToText
 
 logger = Logger().get_logger(__name__)
@@ -22,6 +21,8 @@ class BotConfig(TypedDict):
 
 # bot can be accessed by user id (string)
 class BotNet:
+    from .recall_ws_hooks import RecallWsHooks
+
     def __init__(self, config: BotConfig):
         self.botnet: Dict[str, Bot] = {}
         self.user_id_by_bot_id = {}

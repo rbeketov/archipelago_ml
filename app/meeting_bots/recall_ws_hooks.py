@@ -1,21 +1,25 @@
 import json
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import websockets
 from ..logger import Logger
-from .bot_net import BotNet, RealTimeAudio
 
 
 logger = Logger().get_logger(__name__)
 
 
 class RecallWsHooks:
-    def __init__(self, bot_net: BotNet):
+    if TYPE_CHECKING:
+        from .bot_net import BotNet
+        from .real_time_audio import RealTimeAudio
+
+    def __init__(self, bot_net: "BotNet"):
         self.bot_net = bot_net
 
     def get_real_time_audio_from_header(
         self, message, _handler_for_logs: str
-    ) -> Optional[RealTimeAudio]:
+    ) -> Optional["RealTimeAudio"]:
         bot_id = None
         if isinstance(message, str):
             json_message = json.loads(message)
