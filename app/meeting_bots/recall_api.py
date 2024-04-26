@@ -39,20 +39,39 @@ class RecallApi(RecallApiBase):
             "transcription_options": {
                 "provider": "meeting_captions",
             },
-            "real_time_transcription": {
+            # "real_time_transcription": {
+            #    "destination_url": destination_transcript_url,
+            #    "partial_results": True,
+            # },
+            # "zoom": {
+            #    "request_recording_permission_on_host_join": True,
+            #    "require_recording_permission": True,
+            # },
+            # "recording_mode": "audio_only",
+            # "real_time_media": {
+            #    "websocket_audio_destination_url": destination_audio_url,
+            #    "websocket_speaker_timeline_destination_url": destination_speaker_url,
+            # },
+        }
+
+        if destination_transcript_url:
+            body["real_time_transcription"] = {
                 "destination_url": destination_transcript_url,
                 "partial_results": True,
-            },
-            "zoom": {
-                "request_recording_permission_on_host_join": True,
-                "require_recording_permission": True,
-            },
-            "recording_mode": "audio_only",
-            "real_time_media": {
-                "websocket_audio_destination_url": destination_audio_url,
-                "websocket_speaker_timeline_destination_url": destination_speaker_url,
-            },
-        }
+            }
+
+        if destination_speaker_url or destination_audio_url:
+            body["real_time_media"] = {}
+
+        if destination_audio_url:
+            body["real_time_media"]["websocket_audio_destination_url"] = (
+                destination_audio_url
+            )
+
+        if destination_speaker_url:
+            body["real_time_media"]["websocket_speaker_timeline_destination_url"] = (
+                destination_speaker_url
+            )
 
         return self.recall_post("/api/v1/bot", body)
 

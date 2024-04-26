@@ -126,10 +126,11 @@ class BotNet:
                 job1 = schedule.every(summary_interval_sec).seconds.do(
                     summary_scheduler
                 )
-                job2 = schedule.every(20).seconds.do(transcript_scheduler)
-                job3 = schedule.every(30).seconds.do(check_stop_schedurer)
+                # job2 = schedule.every(20).seconds.do(transcript_scheduler)
+                # job3 = schedule.every(30).seconds.do(check_stop_schedurer)
 
-                self.jobs_by_bot[bot.bot_id].extend([job1, job2, job3])
+                # self.jobs_by_bot[bot.bot_id].extend([job1, job2, job3])
+                self.jobs_by_bot[bot.bot_id].extend([job1])
 
         return Bot(
             user_id=user_id,

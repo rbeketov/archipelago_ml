@@ -4,6 +4,8 @@ from requests import Response
 
 
 def get_ws_url(ip, port):
+    if ip or port:
+        return None
     return f"wss://{ip}:{port}"
 
 

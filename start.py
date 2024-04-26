@@ -24,26 +24,26 @@ if __name__ == "__main__":
             pathlib.Path(config.env.SSL_SERT_PATH),
             pathlib.Path(config.env.SSL_KEY_PATH),
         )
-        ws_server_1 = WebSocketServer(
-            "0.0.0.0",
-            config.env.AUDIO_WS_PORT,
-            bot_net.ws_hooks.audio_ws_handler_combined,
-            reboot_time=None,
-            ssl_context=ssl_context,
-        )
+        # ws_server_1 = WebSocketServer(
+        #     "0.0.0.0",
+        #     config.env.AUDIO_WS_PORT,
+        #     bot_net.ws_hooks.audio_ws_handler_combined,
+        #     reboot_time=None,
+        #     ssl_context=ssl_context,
+        # )
 
-        ws_server_2 = WebSocketServer(
-            "0.0.0.0",
-            config.env.SPEAKER_WS_PORT,
-            bot_net.ws_hooks.speaker_ws_handler,
-            reboot_time=None,
-            ssl_context=ssl_context,
-        )
+        # ws_server_2 = WebSocketServer(
+        #     "0.0.0.0",
+        #     config.env.SPEAKER_WS_PORT,
+        #     bot_net.ws_hooks.speaker_ws_handler,
+        #     reboot_time=None,
+        #     ssl_context=ssl_context,
+        # )
 
         threads = [
             scheduler,
-            ws_server_1,
-            ws_server_2,
+            # ws_server_1,
+            # ws_server_2,
         ]
 
         start_all_threads(threads)
