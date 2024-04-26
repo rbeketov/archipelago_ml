@@ -25,7 +25,7 @@ class ClickClient(metaclass=SingleTone):
     def __init__(self):
         load_dotenv()
 
-        common.set_setting('autogenerate_session_id', False)
+        common.set_setting("autogenerate_session_id", False)
 
         self._host = os.environ.get(HOST)
         self._port = os.environ.get(PORT)
@@ -33,7 +33,7 @@ class ClickClient(metaclass=SingleTone):
         self._click_client = clickhouse_connect.get_client(
             host=self._host,
             port=self._port,
-            username='default',
+            username="default",
             database=self._database,
         )
 
@@ -45,7 +45,5 @@ class ClickClient(metaclass=SingleTone):
     ):
         data = [[prompt, request, response]]
         self._click_client.insert(
-            'gpt_summarize',
-            data,
-            column_names=['prompt', 'request', 'response']
+            "gpt_summarize", data, column_names=["prompt", "request", "response"]
         )

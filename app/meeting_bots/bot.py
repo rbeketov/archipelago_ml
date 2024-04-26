@@ -99,6 +99,7 @@ class BotWebHooks(TypedDict):
 
 class Bot:
     from .real_time_audio import RealTimeAudio
+
     def __init__(
         self,
         user_id,

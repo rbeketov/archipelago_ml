@@ -15,6 +15,7 @@ class SpeakerEvent:
 
 class RealTimeAudio:
     from .bot import Transcription
+
     def __init__(self, bot_id, speech_kit: YaSpeechToText):
         self.audio_file_manager = AudioFileManager(bot_id)
         self.events_queue: list[SpeakerEvent] = []
