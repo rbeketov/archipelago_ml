@@ -89,6 +89,33 @@ class RecallApi(RecallApiBase):
         diarization_str = '?enhanced_diarization=true' if diarization else ''
         return self.recall_get(f'/api/v1/bot/{bot_id}/transcript{diarization_str}')
 
+# ---- SummaryRepo
+class SummaryRepo:
+    def __init__(self, save_endp, get_endp):
+        self.save_endp = save_endp
+        self.get_endp = get_endp
+
+    def save(self, summary: str, bot_id) -> bool:
+        try:
+            requests.post(self.save_endp, json={
+                "text": summary,
+                "id": bot_id,
+            })
+            return True
+        except Exception as e:
+            logger.error('failed to save summary:', e)
+
+        return False
+
+    def get(self, bot_id) -> Optional[str]:
+        try:
+            resp = requests.get(f"{self.get_endp}/{bot_id}")
+            return resp.json()['text']
+        except Exception as e:
+            logger.error('failed to get summary:', e)
+
+        return None
+
 # ---- Bot
 
 class SpeakerTranscription(TypedDict):
@@ -161,11 +188,21 @@ class BotWebHooks(TypedDict):
     audio_ws_url: str
 
 class Bot:
-    def __init__(self, user_id, recall_api_token, bot_name, webhooks: BotWebHooks, join_callback: callable = lambda _: _, leave_callback: callable = lambda _: _):
+    def __init__(
+        self,
+        user_id,
+        recall_api_token,
+        bot_name,
+        webhooks: BotWebHooks,
+        summary_repo: SummaryRepo,
+        join_callback: callable = lambda _: _,
+        leave_callback: callable = lambda _: _
+    ):
         self.bot_name = bot_name
         self.webhooks = webhooks
         self.recall_api = RecallApi(recall_api_token=recall_api_token)
         self.transcription = FullTranscription()
+        self.summary_repo = summary_repo
 
         self.user_id = user_id
 
@@ -231,8 +268,10 @@ class Bot:
             summ = summary_cleaner(summ)
             logger.info(f"cleaned_sum: {summ}")
 
-        return None if summ is None else self.transcription.drop_to_summ(summ)
+        if summ is not None:
+            self.transcription.drop_to_summ(summ)
 
+        self.summary_repo.save(summ, bot_id=self.bot_id)
 
     def get_summary(self) -> Optional[str]:
         summ = self.transcription.summ
@@ -241,7 +280,6 @@ class Bot:
             return None
         return summ
 
-
 # ---- Bot Factory
 
 class BotConfig(TypedDict):
@@ -249,6 +287,8 @@ class BotConfig(TypedDict):
     NAME: str
     MIN_PROMPT_LEN: int
     WEBHOOKS: BotWebHooks
+    SUMM_SAVER_ENDP: str
+    SUMM_GETTER_ENDP: str
 
 # bot can be accessed by user id (string)
 class BotNet:
@@ -264,6 +304,11 @@ class BotNet:
         self.mutex = Lock()
 
         self.config = config
+
+        self.summary_repo = SummaryRepo(
+            save_endp=self.config["SUMM_SAVER_ENDP"],
+            get_endp=self.config["SUMM_GETTER_ENDP"]
+        )
 
     def get_by_user_id(self, user_id: str):
         with self.mutex:
@@ -281,7 +326,13 @@ class BotNet:
 
         return bot
 
-    def new_bot(self, user_id, summary_transf: callable, summary_interval_sec, summary_cleaner: Optional[callable]):
+    def new_bot(
+            self,
+            user_id,
+            summary_transf: callable,
+            summary_interval_sec,
+            summary_cleaner: Optional[callable],
+    ):
         if self.get_by_user_id(user_id) is not None:
             return None
 
@@ -322,7 +373,8 @@ class BotNet:
             bot_name=self.config["NAME"],
             webhooks=self.config["WEBHOOKS"],
             join_callback=join_callback,
-            leave_callback=leave_callback
+            leave_callback=leave_callback,
+            summary_repo=self.summary_repo,
         )
 
 def stop_jobs(jobs):
@@ -331,3 +383,4 @@ def stop_jobs(jobs):
 
     for job in jobs:
         schedule.cancel_job(job)
+
