@@ -17,6 +17,8 @@ class BotConfig(TypedDict):
     WEBHOOKS: BotWebHooks
     YA_SPEECH_KIT_API_KEY: str
     FFMPEG_PATH: str
+    SUMM_SAVER_ENDP: str
+    SUMM_GETTER_ENDP: str
 
 
 # bot can be accessed by user id (string)
@@ -37,6 +39,11 @@ class BotNet:
         self.config = config
 
         self._ws_hooks = RecallWsHooks(self)
+
+        self.summary_repo = SummaryRepo(
+            save_endp=self.config["SUMM_SAVER_ENDP"],
+            get_endp=self.config["SUMM_GETTER_ENDP"],
+        )
 
         self.speech_kit = YaSpeechToText(
             api_key=config["YA_SPEECH_KIT_API_KEY"],
@@ -140,6 +147,7 @@ class BotNet:
             speech_kit=self.speech_kit,
             join_callback=join_callback,
             leave_callback=leave_callback,
+            summary_repo=self.summary_repo,
         )
 
 

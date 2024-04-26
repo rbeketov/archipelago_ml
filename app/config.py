@@ -55,6 +55,7 @@ class EnvConfig:
         self.FFMPEG_PATH = self.__class__.env_or_panic("FFMPEG_PATH")  # /usr/bin/ffmpeg
         self.AUDIO_WS_PORT = int("8079")
         self.SPEAKER_WS_PORT = int("8078")
+        self.NOTES_PORT = int("8899")
 
     def env_or_panic(key: str):
         env = os.environ.get(key)
@@ -67,6 +68,7 @@ def make_bot_config(
     recall_api_token,
     speaker_ws_port,
     audio_ws_port,
+    notes_port,
     ip,
     server_name,
     port,
@@ -81,6 +83,8 @@ def make_bot_config(
             "transcription_url": f"http://{ip}:{port}/transcription",
         },
         "MIN_PROMPT_LEN": min_prompt_len,
+        "SUMM_GETTER_ENDP": f"http://{ip}:{notes_port}/get",
+        "SUMM_SAVER_ENDP": f"http://{ip}:{notes_port}/save",
     }
 
 
@@ -104,6 +108,7 @@ class Config:
                 server_name=env.SERVER_NAME,
                 port=env.MYSELF_PORT,
                 min_prompt_len=env.MIN_PROMPT_LEN,
+                notes_port=env.NOTES_PORT,
             )
 
         return cls._instance

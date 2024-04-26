@@ -68,7 +68,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
 
             bot.join_and_start_recording(meeting_url=meeting_url)
 
-            return jsonify("OK")
+            return jsonify(
+                {
+                    "summ_id": bot.bot_id,
+                }
+            )
 
     @bot_blueprint.route("/stop_recording", methods=["POST"])
     def stop_recording():
@@ -149,7 +153,8 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     @bot_blueprint.route("/get_sum", methods=["POST"])
     def get_sum():
         class RequestFields(StrEnum):
-            USER_ID = "user_id"
+            # USER_ID = "user_id"
+            SUMM_ID = "summ_id"
             TOKEN_VALUE = "token"
             ROLE = "role"
 
@@ -163,19 +168,17 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if token != config.env.TOKEN:
                 return json_error(403)
 
-            user_id = request.get_json().get(RequestFields.USER_ID)
-            if not user_id:
-                return json_error(400, description="user_id is required")
+            bot_id = request.get_json().get(RequestFields.SUMM_ID)
+            if not bot_id:
+                return json_error(400, description="summ_id is required")
 
             role = request.get_json().get(RequestFields.ROLE, None)
 
             logger.info(f"bot net: {bot_net}")
 
-            bot = bot_net.get_by_user_id(user_id=user_id)
-            if bot is None:
-                return json_error(400, description="No such bot")
+            # TODO: make sure bot existed
+            summ = bot_net.summary_repo.get(bot_id=bot_id)
 
-            summ = bot.get_summary()
             if summ is None:
                 return jsonify({"has_sum": False})
 

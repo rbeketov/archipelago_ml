@@ -1,6 +1,7 @@
 import re
 import json
 from requests import Response
+import requests
 from .recall_api import RecallApi
 from ..logger import Logger
 from typing import Dict, List, TypedDict, Optional, Union
@@ -91,6 +92,38 @@ class FullTranscription:
         return c(c(inp, f"{word} "), f" {word}")
 
 
+# ---- SummaryRepo
+class SummaryRepo:
+    def __init__(self, save_endp, get_endp):
+        self.save_endp = save_endp
+        self.get_endp = get_endp
+
+    def save(self, summary: str, bot_id) -> bool:
+        try:
+            requests.post(
+                self.save_endp,
+                json={
+                    "text": summary,
+                    "id": bot_id,
+                },
+            )
+            return True
+        except Exception as e:
+            logger.error("failed to save summary:", e)
+
+        return False
+
+    def get(self, bot_id) -> Optional[str]:
+        try:
+            resp = requests.get(f"{self.get_endp}/{bot_id}")
+            return resp.json()["text"]
+        except Exception as e:
+            logger.error("failed to get summary:", e)
+
+        return None
+
+
+# ----- Bot
 class BotWebHooks(TypedDict):
     transcription_url: str
     speaker_ws_url: str
@@ -105,6 +138,7 @@ class Bot:
         user_id,
         recall_api_token,
         bot_name,
+        summary_repo: SummaryRepo,
         webhooks: BotWebHooks,
         speech_kit: YaSpeechToText,
         join_callback: callable = lambda _: _,
@@ -116,6 +150,7 @@ class Bot:
         self.webhooks = webhooks
         self.recall_api = RecallApi(recall_api_token=recall_api_token)
         self.transcription = FullTranscription()
+        self.summary_repo = summary_repo
 
         self.user_id = user_id
 
@@ -198,7 +233,10 @@ class Bot:
             summ = summary_cleaner(summ)
             logger.info("cleaned_sum: %s", summ)
 
-        return None if summ is None else self.transcription.drop_to_summ(summ)
+        if summ is not None:
+            self.transcription.drop_to_summ(summ)
+
+        self.summary_repo.save(summ, bot_id=self.bot_id)
 
     def get_summary(self) -> Optional[str]:
         summ = self.transcription.summ
