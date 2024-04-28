@@ -172,17 +172,24 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not bot_id:
                 return json_error(400, description="summ_id is required")
 
-            role = request.get_json().get(RequestFields.ROLE, None)
+            role = request.get_json().get(RequestFields.ROLE)
+            if not role or role == "":
+                return json_error(400, description="role is required")
 
             logger.info(f"bot net: {bot_net}")
 
             # TODO: make sure bot existed
-            summ = bot_net.summary_repo.get(bot_id=bot_id)
+            summ_with_role_tuple = bot_net.summary_repo.get_summ_with_role(bot_id=bot_id)
+            if summ_with_role_tuple is not None:
+                summ_with_role, summ_role = summ_with_role_tuple
+                if summ_role == role and summ_with_role != "":
+                    json_data = {"summ_text": summ_with_role, "has_sum": True}
 
+            summ = bot_net.summary_repo.get_summ(bot_id=bot_id)
             if summ is None:
                 return jsonify({"has_sum": False})
 
-            if role is not None and role != "default":
+            if role != "default":
                 summ = send_request_to_gpt(
                     summ,
                     config.env.MODEL_URI_GPT,
@@ -192,6 +199,12 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 )
                 if summ is None:
                     return jsonify({"has_sum": False})
+
+            # TODO:
+            # make async (after response)
+            # dont dublicate input if role is default
+            # handle update_res == False
+            update_res = bot_net.summary_repo.update_role_text(bot_id=bot_id, summary_with_role=summ, role=role)
 
             json_data = {"summ_text": summ, "has_sum": True}
             return jsonify(json_data)

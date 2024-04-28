@@ -37,7 +37,7 @@ class Transcription(TypedDict):
             sp=SpeakerTranscription(
                 message=message, speaker=speaker, is_final=is_final
             ),
-        )
+        ) # type: ignore
 
 
 class FullTranscription:
@@ -111,10 +111,36 @@ class SummaryRepo:
 
         return False
 
-    def get(self, bot_id) -> Optional[str]:
+    def update_role_text(self, bot_id, summary_with_role, role) -> bool:
+        try:
+            requests.post(
+                self.save_endp,
+                json={
+                    "text_with_role": summary_with_role,
+                    "role": role,
+                    "id": bot_id,
+                },
+            )
+            return True
+        except Exception as e:
+            logger.error("failed to update summary text role:", e)
+
+        return False
+
+    def get_summ(self, bot_id) -> Optional[str]:
         try:
             resp = requests.get(f"{self.get_endp}/{bot_id}")
             return resp.json()["text"]
+        except Exception as e:
+            logger.error("failed to get summary:", e)
+
+        return None
+
+    def get_summ_with_role(self, bot_id) -> Optional[tuple[str, str]]:
+        try:
+            resp = requests.get(f"{self.get_endp}/{bot_id}")
+            resp_json = resp.json()
+            return (resp_json["text_with_role"], resp_json["role"])
         except Exception as e:
             logger.error("failed to get summary:", e)
 
@@ -128,7 +154,6 @@ class SummaryRepo:
             return False
 
         return resp.status_code == 200
-
 
 # ----- Bot
 class BotWebHooks(TypedDict):
@@ -164,9 +189,26 @@ class Bot:
         self.join_callback = join_callback
         self.leave_callback = leave_callback
 
+        # TODO:
+        # handle if meeting is in progress
+        # check if bot by user exists
+
+        # get bot_id by user_id
+        # ensure if meeting is in progress
+        #summ = self.summary_repo.get_summ(self.bot_id)
+        #if summ is not None:
+        #    self.transcription.drop_to_summ(summ)
+        # self._setup_after_joining(bot_id)
+
+
     @property
     def real_time_audio(self) -> Optional["RealTimeAudio"]:
         return self.real_time_audio
+
+    def _setup_after_joining(self, bot_id):
+        self.bot_id = bot_id
+        self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
+        self.join_callback(self)
 
     def join_and_start_recording(self, meeting_url):
         logger.debug("Before start_recording")
@@ -179,11 +221,8 @@ class Bot:
         ).json()
 
         logger.debug("%s", resp)
-        self.bot_id = resp["id"]
-
-        self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
-
-        self.join_callback(self)
+        bot_id = resp["id"]
+        self._setup_after_joining(bot_id=bot_id)
 
     def leave(self):
         resp = self.recall_api.stop_recording(self.bot_id).json()
@@ -244,10 +283,3 @@ class Bot:
             self.transcription.drop_to_summ(summ)
 
         self.summary_repo.save(summ, bot_id=self.bot_id)
-
-    def get_summary(self) -> Optional[str]:
-        summ = self.transcription.summ
-        logger.info("get_summary: %s", summ)
-        if summ == "":
-            return None
-        return summ
