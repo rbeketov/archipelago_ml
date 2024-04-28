@@ -1,13 +1,10 @@
 import re
 import json
-from requests import Response
 import requests
 from .recall_api import RecallApi
 from ..logger import Logger
-from typing import Dict, List, TypedDict, Optional, Union
+from typing import Dict, TypedDict, Optional, Union
 from functools import reduce
-from threading import Lock
-from collections import defaultdict
 from ..speach_kit import YaSpeechToText
 
 logger = Logger().get_logger(__name__)

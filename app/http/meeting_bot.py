@@ -1,6 +1,6 @@
 from strenum import StrEnum
 from flask import Blueprint
-from flask import Flask, request, jsonify, abort
+from flask import request, jsonify
 
 from ..config import Config
 from ..gpt_utils import gpt_req_sender, send_request_to_gpt

@@ -6,7 +6,6 @@ from app.utils import stop_all_threads, start_all_threads, make_ssl_context
 from app.meeting_bots import BotNet
 from app.scheduler import Scheduler
 
-from app.websocket import WebSocketServer
 
 from app.logger import Logger
 

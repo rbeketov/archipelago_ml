@@ -1,4 +1,3 @@
-import queue
 from threading import Lock
 from ..audio import AudioFileManager, AudioRaw, AudioConverter
 from ..speach_kit import YaSpeechToText

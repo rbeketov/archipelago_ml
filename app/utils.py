@@ -1,4 +1,3 @@
-import pathlib
 import ssl
 from requests import Response
 
