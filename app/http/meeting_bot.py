@@ -77,7 +77,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     @bot_blueprint.route("/stop_recording", methods=["POST"])
     def stop_recording():
         class RequestFields(StrEnum):
-            USER_ID = "user_id"
+            SUMM_ID = "summ_id"
             TOKEN_VALUE = "token"
 
         with HttpException400(logger=logger):
@@ -90,11 +90,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if token != config.env.TOKEN:
                 return json_error(403)
 
-            user_id = request.get_json().get(RequestFields.USER_ID)
-            if not user_id:
-                return json_error(400, description="user_id is required")
+            bot_id = request.get_json().get(RequestFields.SUMM_ID)
+            if not bot_id:
+                return json_error(400, description="summ_id is required")
 
-            bot = bot_net.get_by_user_id(user_id=user_id)
+            bot = bot_net.get_by_bot_id(bot_id=bot_id)
             if bot is None:
                 return json_error(400, description="No such bot")
 
@@ -105,7 +105,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     @bot_blueprint.route("/bot_state", methods=["POST"])
     def bot_state():
         class RequestFields(StrEnum):
-            USER_ID = "user_id"
+            SUMM_ID = "summ_id"
             TOKEN_VALUE = "token"
 
         with HttpException400(logger=logger):
@@ -118,11 +118,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if token != config.env.TOKEN:
                 return json_error(403)
 
-            user_id = request.get_json().get(RequestFields.USER_ID)
-            if not user_id:
-                return json_error(400, description="user_id is required")
+            bot_id = request.get_json().get(RequestFields.SUMM_ID)
+            if not bot_id:
+                return json_error(400, description="summ_id is required")
 
-            bot = bot_net.get_by_user_id(user_id=user_id)
+            bot = bot_net.get_by_bot_id(bot_id=bot_id)
             if bot is None:
                 return json_error(400, description="No such bot")
 

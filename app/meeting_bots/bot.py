@@ -167,26 +167,19 @@ class Bot:
 
     def __init__(
         self,
-        user_id,
-        recall_api_token,
-        bot_name,
+        bot_id,
+        recall_api: RecallApi,
         summary_repo: SummaryRepo,
-        webhooks: BotWebHooks,
         speech_kit: YaSpeechToText,
-        join_callback: callable = lambda _: _,
         leave_callback: callable = lambda _: _,
     ):
+        self.bot_id = bot_id
         self.speech_kit = speech_kit
-        self.real_time_audio = None
-        self.bot_name = bot_name
-        self.webhooks = webhooks
-        self.recall_api = RecallApi(recall_api_token=recall_api_token)
+        self.recall_api = recall_api
         self.transcription = FullTranscription()
         self.summary_repo = summary_repo
+        self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
-        self.user_id = user_id
-
-        self.join_callback = join_callback
         self.leave_callback = leave_callback
 
         # TODO:
@@ -200,29 +193,42 @@ class Bot:
         #    self.transcription.drop_to_summ(summ)
         # self._setup_after_joining(bot_id)
 
+    @staticmethod
+    def from_join_meeting(
+        bot_name,
+        recall_api_token,
+        meeting_url,
+        summary_repo: SummaryRepo,
+        webhooks: BotWebHooks,
+        speech_kit: YaSpeechToText,
+        leave_callback: callable = lambda _: _,
+    ):
+        recall_api = RecallApi(recall_api_token=recall_api_token)
 
-    @property
-    def real_time_audio(self) -> Optional["RealTimeAudio"]:
-        return self.real_time_audio
-
-    def _setup_after_joining(self, bot_id):
-        self.bot_id = bot_id
-        self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
-        self.join_callback(self)
-
-    def join_and_start_recording(self, meeting_url):
         logger.debug("Before start_recording")
-        resp = self.recall_api.start_recording(
-            self.bot_name,
+        resp = recall_api.start_recording(
+            bot_name,
             meeting_url=meeting_url,
-            destination_transcript_url=self.webhooks["transcription_url"],
-            destination_audio_url=self.webhooks["audio_ws_url"],
-            destination_speaker_url=self.webhooks["speaker_ws_url"],
+            destination_transcript_url=webhooks["transcription_url"],
+            destination_audio_url=webhooks["audio_ws_url"],
+            destination_speaker_url=webhooks["speaker_ws_url"],
         ).json()
 
         logger.debug("%s", resp)
         bot_id = resp["id"]
-        self._setup_after_joining(bot_id=bot_id)
+        return Bot(
+            bot_id=bot_id,
+            summary_repo=summary_repo,
+            recall_api=recall_api,
+            leave_callback=leave_callback,
+            speech_kit=speech_kit,
+        )
+
+
+
+    @property
+    def real_time_audio(self) -> Optional["RealTimeAudio"]:
+        return self.real_time_audio
 
     def leave(self):
         resp = self.recall_api.stop_recording(self.bot_id).json()

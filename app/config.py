@@ -24,7 +24,7 @@ class SystemPromts(StrEnum):
     SUMMARAIZE = summarization_with_detail("Средняя")
     CLEAN_SUMMARIZATION = "Оставь только главное в тексте"
     STYLE = lambda role: f"Стилизуй текст в роли {role}"  # noqa: E731
-    SUMMARAIZE_WITH_DETAIL = summarization_with_detail
+    SUMMARAIZE_WITH_DETAIL = summarization_with_detail # TODO: if not works - add lambda
 
     SUMMARAIZE_OLD = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."
     MIND_MAP = "Ты опытный редактор. Декопозируй указанный текст на темы, выведи только темы через запятую"
