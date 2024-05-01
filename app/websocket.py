@@ -2,6 +2,7 @@ import asyncio
 import logging
 import threading
 import time
+from typing import Callable
 
 import websockets
 
@@ -15,7 +16,7 @@ class WebSocketServer(threading.Thread):
         self,
         ip,
         port,
-        ws_serve: callable,
+        ws_serve: Callable,
         reboot_time=None,
         ssl_context=None,
         debug=False,

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from threading import Lock
-from typing import Dict, Optional, TypedDict
+from typing import Dict, Optional, TypedDict, Callable
 
 import schedule
 from app.logger import Logger
@@ -57,7 +57,7 @@ class BotNet:
 
     """
     @property
-    def ws_hooks_all(self) -> list[callable]:
+    def ws_hooks_all(self) -> list[Callable]:
         return get_all_recall_ws_hooks()
     """
 
@@ -70,9 +70,9 @@ class BotNet:
     def _setup_bot(
         self,
         bot: Bot,
-        summary_transf: callable,
+        summary_transf: Callable,
         summary_interval_sec,
-        summary_cleaner: Optional[callable],
+        summary_cleaner: Optional[Callable],
     ):
         with self.mutex:
             self.botnet[bot.bot_id] = bot
@@ -101,9 +101,9 @@ class BotNet:
     def _schedule_jobs_for_bot(
         self,
         bot: Bot,
-        summary_transf: callable,
+        summary_transf: Callable,
         summary_interval_sec,
-        summary_cleaner: Optional[callable],
+        summary_cleaner: Optional[Callable],
     ):
         def summary_scheduler():
             logger.info("summary_scheduler called")
@@ -153,9 +153,9 @@ class BotNet:
     def join_meeting(
         self,
         meetring_url: str,
-        summary_transf: callable,
+        summary_transf: Callable,
         summary_interval_sec,
-        summary_cleaner: Optional[callable],
+        summary_cleaner: Optional[Callable],
     ):
         bot = Bot.from_join_meeting(
             bot_name=self.config["NAME"],
@@ -178,9 +178,9 @@ class BotNet:
     def try_restore_bot(
         self,
         bot_id,
-        summary_transf: callable,
+        summary_transf: Callable,
         summary_interval_sec,
-        summary_cleaner: Optional[callable],
+        summary_cleaner: Optional[Callable],
     ) -> Optional[Bot]:
         summ = self.summary_repo.get_summ(bot_id=bot_id)
         if summ is None:

@@ -3,7 +3,7 @@ import json
 import requests
 from .recall_api import RecallApi
 from ..logger import Logger
-from typing import Dict, TypedDict, Optional, Union
+from typing import Callable, Dict, TypedDict, Optional, Union
 from functools import reduce
 from ..speach_kit import YaSpeechToText
 
@@ -171,7 +171,7 @@ class Bot:
         recall_api: RecallApi,
         summary_repo: SummaryRepo,
         speech_kit: YaSpeechToText,
-        leave_callback: callable = lambda _: _,
+        leave_callback: Callable = lambda _: _,
     ):
         self.bot_id = bot_id
         self.speech_kit = speech_kit
@@ -182,17 +182,6 @@ class Bot:
 
         self.leave_callback = leave_callback
 
-        # TODO:
-        # handle if meeting is in progress
-        # check if bot by user exists
-
-        # get bot_id by user_id
-        # ensure if meeting is in progress
-        #summ = self.summary_repo.get_summ(self.bot_id)
-        #if summ is not None:
-        #    self.transcription.drop_to_summ(summ)
-        # self._setup_after_joining(bot_id)
-
     @staticmethod
     def from_join_meeting(
         bot_name,
@@ -201,7 +190,7 @@ class Bot:
         summary_repo: SummaryRepo,
         webhooks: BotWebHooks,
         speech_kit: YaSpeechToText,
-        leave_callback: callable = lambda _: _,
+        leave_callback: Callable = lambda _: _,
     ):
         recall_api = RecallApi(recall_api_token=recall_api_token)
 
@@ -263,9 +252,9 @@ class Bot:
 
     def make_summary(
         self,
-        summary_transf: callable,
+        summary_transf: Callable,
         min_prompt_len,
-        summary_cleaner: Optional[callable],
+        summary_cleaner: Optional[Callable],
     ) -> None:
         prompt = self.transcription.to_prompt()
         logger.info(f"Промпт: {prompt}")
