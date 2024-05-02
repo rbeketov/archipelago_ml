@@ -38,10 +38,6 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not meeting_url:
                 return json_error(400, description="meeting_url is required")
 
-            user_id = request.get_json().get(RequestFields.USER_ID)
-            if not user_id:
-                return json_error(400, description="user_id is required")
-
             bot = bot_net.join_meeting(
                 meetring_url=meeting_url,
                 detalization=detalization,
