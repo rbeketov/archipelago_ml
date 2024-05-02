@@ -8,6 +8,7 @@ from .bot import Bot, BotWebHooks, SummaryRepo  # TODO: SummaryRepo maybe cyclic
 from ..speach_kit import YaSpeechToText
 from .recall_ws_hooks import RecallWsHooks  # TODO: maybe cyclic
 
+
 logger = Logger().get_logger(__name__)
 
 
@@ -60,12 +61,6 @@ class BotNet:
     def ws_hooks_all(self) -> list[Callable]:
         return get_all_recall_ws_hooks()
     """
-
-    def get_by_bot_id(self, bot_id: str) -> Optional[Bot]:
-        bot = None
-        with self.mutex:
-            bot = self.botnet.get(bot_id, None)
-        return bot
 
     def _setup_bot(
         self,
@@ -148,17 +143,25 @@ class BotNet:
         for job in jobs:
             schedule.cancel_job(job)
 
+    def get_by_bot_id(self, bot_id: str) -> Optional[Bot]:
+        bot = None
+        with self.mutex:
+            bot = self.botnet.get(bot_id, None)
+        return bot
+
     # raises: Exception from recall api call
     # TODO: maybe add try catch
     def join_meeting(
         self,
         meetring_url: str,
+        detalization: str,
         summary_transf: Callable,
         summary_interval_sec,
         summary_cleaner: Optional[Callable],
     ):
         bot = Bot.from_join_meeting(
             bot_name=self.config["NAME"],
+            detalization=detalization,
             recall_api_token=self.config["RECALL_API_TOKEN"],
             meeting_url=meetring_url,
             summary_repo=self.summary_repo,
@@ -166,7 +169,7 @@ class BotNet:
             speech_kit=self.speech_kit,
             leave_callback=self._get_leave_callback(), # TODO
         )
-        self.summary_repo.save(summary="", bot_id=bot.bot_id)
+        self.summary_repo.save(summary="", bot_id=bot.bot_id, platform=str(bot.platform), detalization=detalization)
 
         self._setup_bot(
             bot=bot,
@@ -174,6 +177,7 @@ class BotNet:
             summary_interval_sec=summary_interval_sec,
             summary_cleaner=summary_cleaner,
         )
+        return bot
 
     def try_restore_bot(
         self,
@@ -182,13 +186,21 @@ class BotNet:
         summary_interval_sec,
         summary_cleaner: Optional[Callable],
     ) -> Optional[Bot]:
-        summ = self.summary_repo.get_summ(bot_id=bot_id)
-        if summ is None:
+
+        summary_model = self.summary_repo.get_summary(bot_id)
+        if summary_model is None or not summary_model["active"]:
             return None
 
+        summ = summary_model["text"]
+        detalization = summary_model["detalization"]
+        platform = summary_model["platform"]
+
         from .recall_api import RecallApi
+        from .platform_parser import Platform
         bot = Bot(
             bot_id=bot_id,
+            detalization=detalization,
+            platform=Platform.from_str(platform),
             recall_api=RecallApi(self.config["RECALL_API_TOKEN"]),
             summary_repo=self.summary_repo,
             speech_kit=self.speech_kit,
@@ -203,4 +215,31 @@ class BotNet:
         )
         return bot
 
+    def get_by_id_or_try_restore(
+        self,
+        bot_id,
+        summary_transf: Callable,
+        summary_interval_sec,
+        summary_cleaner: Optional[Callable],
+    ):
+        bot = self.get_by_bot_id(bot_id=bot_id)
+        if bot is not None:
+            return bot
 
+        logger.info("trying to restore bot")
+        bot = self.try_restore_bot(
+            bot_id=bot_id,
+            summary_transf=summary_transf,
+            summary_interval_sec=summary_interval_sec,
+            summary_cleaner=summary_cleaner,
+        )
+
+        if bot is not None:
+            logger.info("bot restored")
+
+        return bot
+
+    @property
+    def recall_api(self):
+        from .recall_api import RecallApi
+        return RecallApi(recall_api_token=self.config["RECALL_API_TOKEN"])

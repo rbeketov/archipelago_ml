@@ -1,3 +1,4 @@
+from typing import Union
 import requests
 from ..utils import wrap_http_err
 
@@ -77,6 +78,22 @@ class RecallApi(RecallApiBase):
 
     def stop_recording(self, bot_id):
         return self.recall_post(f"/api/v1/bot/{bot_id}/leave_call", json_body={})
+
+    def recording_state_crit(self, bot_id) -> Union[str, bool]:
+        resp = self.recording_state.json()
+
+        status = resp["status_changes"][-1]
+
+        if status["code"] in [
+            "call_ended",
+            "fatal",
+            "recording_permission_denied",
+            "recording_done",
+            "done",
+        ]:
+            return f"{status['sub_code']}: {status['message']}"
+
+        return True
 
     def recording_state(self, bot_id):
         return self.recall_get(f"/api/v1/bot/{bot_id}")

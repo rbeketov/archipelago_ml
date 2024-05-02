@@ -7,7 +7,9 @@ from ..gpt_utils import gpt_req_sender, send_request_to_gpt
 from .utils import json_error, HttpException400
 from ..logger import Logger
 
-from ..meeting_bots import BotNet, Transcription
+from ..meeting_bots import BotNet
+
+from ..utils import none_unpack
 
 logger = Logger().get_logger(__name__)
 
@@ -33,11 +35,8 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if token != config.env.TOKEN:
                 return json_error(403)
 
-            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(
-                request.get_json().get(RequestFields.SUMMARY_DETAIL)
-            )
-            if summary_detail_prompt is None:
-                json_error(400, description="summary_detail is invalid")
+            detalization = request.get_json().get(RequestFields.SUMMARY_DETAIL, "Средняя")
+            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(detalization)
 
             meeting_url = request.get_json().get(RequestFields.MEETING_URL)
             if not meeting_url:
@@ -47,26 +46,23 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not user_id:
                 return json_error(400, description="user_id is required")
 
-            bot = bot_net.new_bot(
-                user_id,
-                gpt_req_sender(
+            bot = bot_net.join_meeting(
+                meetring_url=meeting_url,
+                detalization=detalization,
+                summary_transf=gpt_req_sender(
                     config.env.MODEL_URI_GPT,
                     summary_detail_prompt,
                     config.env.API_KEY,
                     0,
                 ),
-                config.env.SUMMARY_INTERVAL,
-                gpt_req_sender(
+                summary_interval_sec=config.env.SUMMARY_INTERVAL,
+                summary_cleaner=gpt_req_sender(
                     config.env.MODEL_URI_GPT,
                     config.prompts.CLEAN_SUMMARIZATION,
                     config.env.API_KEY,
                     0,
                 ),
             )
-            if bot is None:
-                return json_error(400, description="This user already have active bot")
-
-            bot.join_and_start_recording(meeting_url=meeting_url)
 
             return jsonify(
                 {
@@ -95,10 +91,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 return json_error(400, description="summ_id is required")
 
             bot = bot_net.get_by_bot_id(bot_id=bot_id)
-            if bot is None:
-                return json_error(400, description="No such bot")
+            if bot is not None:
+                bot.leave()
+                return jsonify("OK")
 
-            bot.leave()
+            bot_net.recall_api.stop_recording(bot_id)
 
             return jsonify("OK")
 
@@ -122,11 +119,8 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not bot_id:
                 return json_error(400, description="summ_id is required")
 
-            bot = bot_net.get_by_bot_id(bot_id=bot_id)
-            if bot is None:
-                return json_error(400, description="No such bot")
-
-            state = bot.recording_state()
+            # TODO: may panic if bot not exists
+            state = bot_net.recall_api.recording_state_crit(bot_id=bot_id)
 
             if isinstance(state, str):
                 return jsonify({"state": state})
@@ -142,7 +136,39 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             bot_id = payload["bot_id"]
             transcript = payload["transcript"]
 
+            from ..meeting_bots.bot import Transcription # maybe cyclic
+
             bot = bot_net.get_by_bot_id(bot_id=bot_id)
+            if bot is not None:
+                bot.add_transcription(Transcription.from_recall_resp(transcript))
+                return jsonify({"success": True})
+
+            # TODO:
+            # move this inside bot
+            summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
+            if summary_model is None:
+                return jsonify({"success": True})
+
+            detalization = summary_model["detalization"]
+            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(detalization)
+
+            bot = bot_net.try_restore_bot(
+                bot_id=bot_id,
+                summary_transf=gpt_req_sender(
+                    config.env.MODEL_URI_GPT,
+                    summary_detail_prompt,
+                    config.env.API_KEY,
+                    0,
+                ),
+                summary_interval_sec=config.env.SUMMARY_INTERVAL,
+                summary_cleaner=gpt_req_sender(
+                    config.env.MODEL_URI_GPT,
+                    config.prompts.CLEAN_SUMMARIZATION,
+                    config.env.API_KEY,
+                    0,
+                ),
+            )
+
             if bot is None:
                 logger.error("No such bot")
             else:
@@ -179,13 +205,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             logger.info(f"bot net: {bot_net}")
 
             # TODO: make sure bot existed
-            summ_with_role_tuple = bot_net.summary_repo.get_summ_with_role(bot_id=bot_id)
-            if summ_with_role_tuple is not None:
-                summ_with_role, summ_role = summ_with_role_tuple
-                if summ_role == role and summ_with_role != "":
-                    json_data = {"summ_text": summ_with_role, "has_sum": True}
+            summ_with_role, summ_role, active = none_unpack(bot_net.summary_repo.get_summ_with_role(bot_id=bot_id), 3)
+            if summ_with_role is not None and summ_role == role and summ_with_role != "":
+                json_data = {"summ_text": summ_with_role, "has_sum": True}
 
-            summ = bot_net.summary_repo.get_summ(bot_id=bot_id)
+            summ, active = none_unpack(bot_net.summary_repo.get_summ(bot_id=bot_id), 2)
             if summ is None:
                 return jsonify({"has_sum": False})
 

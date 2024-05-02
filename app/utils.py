@@ -40,3 +40,8 @@ def make_ssl_context(sert_path, key_path):
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain(sert_path, keyfile=key_path)
     return ssl_context
+
+def none_unpack(tup, num):
+    if tup is None:
+        return tuple((None for i in range(num)))
+    return tup

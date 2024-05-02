@@ -7,6 +7,8 @@ from typing import Callable, Dict, TypedDict, Optional, Union
 from functools import reduce
 from ..speach_kit import YaSpeechToText
 
+from .platform_parser import platform_by_url, Platform
+
 logger = Logger().get_logger(__name__)
 
 
@@ -90,19 +92,31 @@ class FullTranscription:
 
 
 # ---- SummaryRepo
+class SummaryModel(TypedDict):
+    id:  str
+    text: str
+    text_with_role: str
+    active:       bool
+    role:         str
+    platform:     str
+    started_at:   str # ????
+    detalization: str
+
 class SummaryRepo:
     def __init__(self, save_endp, get_endp, finish_endp):
         self.save_endp = save_endp
         self.get_endp = get_endp
         self.finish_endp = finish_endp
 
-    def save(self, summary: str, bot_id) -> bool:
+    def save(self, bot_id, summary: str, platform: str, detalization: str) -> bool:
         try:
             requests.post(
                 self.save_endp,
                 json={
                     "text": summary,
                     "id": bot_id,
+                    "platform": platform,
+                    "detalization": detalization,
                 },
             )
             return True
@@ -110,6 +124,25 @@ class SummaryRepo:
             logger.error("failed to save summary:", e)
 
         return False
+
+    '''
+    def update_text(self, summary: str) -> bool:
+        try:
+            requests.post(
+                self.save_endp,
+                json={
+                    "text": summary,
+                    "id": bot_id,
+                    "platform": platform,
+                    "detalization": detalization,
+                },
+            )
+            return True
+        except Exception as e:
+            logger.error("failed to save summary:", e)
+
+        return False
+    '''
 
     def update_role_text(self, bot_id, summary_with_role, role) -> bool:
         try:
@@ -127,20 +160,33 @@ class SummaryRepo:
 
         return False
 
-    def get_summ(self, bot_id) -> Optional[str]:
+    def get_summary(self, bot_id) -> Optional[SummaryModel]:
         try:
             resp = requests.get(f"{self.get_endp}/{bot_id}")
-            return resp.json()["text"]
+            resp_json: SummaryModel = resp.json()
+            return resp_json
         except Exception as e:
             logger.error("failed to get summary:", e)
 
         return None
 
-    def get_summ_with_role(self, bot_id) -> Optional[tuple[str, str]]:
+    def get_summ(self, bot_id) -> Optional[tuple[str, bool]]:
         try:
             resp = requests.get(f"{self.get_endp}/{bot_id}")
-            resp_json = resp.json()
-            return (resp_json["text_with_role"], resp_json["role"])
+            resp_json: SummaryModel = resp.json()
+            text = resp_json["text"]
+            active = resp_json["active"]
+            return (text, active)
+        except Exception as e:
+            logger.error("failed to get summary:", e)
+
+        return None
+
+    def get_summ_with_role(self, bot_id) -> Optional[tuple[str, str, bool]]:
+        try:
+            resp = requests.get(f"{self.get_endp}/{bot_id}")
+            resp_json: SummaryModel = resp.json()
+            return (resp_json["text_with_role"], resp_json["role"], resp_json["active"])
         except Exception as e:
             logger.error("failed to get summary:", e)
 
@@ -168,6 +214,8 @@ class Bot:
     def __init__(
         self,
         bot_id,
+        platform: Platform,
+        detalization: str,
         recall_api: RecallApi,
         summary_repo: SummaryRepo,
         speech_kit: YaSpeechToText,
@@ -180,11 +228,15 @@ class Bot:
         self.summary_repo = summary_repo
         self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
+        self.platform = platform
+        self.detalization = detalization
+
         self.leave_callback = leave_callback
 
     @staticmethod
     def from_join_meeting(
         bot_name,
+        detalization: str,
         recall_api_token,
         meeting_url,
         summary_repo: SummaryRepo,
@@ -207,13 +259,13 @@ class Bot:
         bot_id = resp["id"]
         return Bot(
             bot_id=bot_id,
+            platform=platform_by_url(meeting_url),
+            detalization=detalization,
             summary_repo=summary_repo,
             recall_api=recall_api,
             leave_callback=leave_callback,
             speech_kit=speech_kit,
         )
-
-
 
     @property
     def real_time_audio(self) -> Optional["RealTimeAudio"]:
@@ -226,21 +278,7 @@ class Bot:
         self.leave_callback(self)
 
     def recording_state(self) -> Union[str, bool]:
-        resp = self.recall_api.recording_state(self.bot_id).json()
-        logger.debug(resp)
-
-        status = resp["status_changes"][-1]
-
-        if status["code"] in [
-            "call_ended",
-            "fatal",
-            "recording_permission_denied",
-            "recording_done",
-            "done",
-        ]:
-            return f"{status['sub_code']}: {status['message']}"
-
-        return True
+        return self.recall_api.recording_state_crit(self.bot_id)
 
     def transcript_full(self, diarization: bool) -> str:
         resp = self.recall_api.transcript(self.bot_id, diarization).json()
@@ -277,4 +315,4 @@ class Bot:
         if summ is not None:
             self.transcription.drop_to_summ(summ)
 
-        self.summary_repo.save(summ, bot_id=self.bot_id)
+        self.summary_repo.save(summary=summ, bot_id=self.bot_id, platform=str(self.platform), detalization=self.detalization)
