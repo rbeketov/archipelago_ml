@@ -61,6 +61,7 @@ class EnvConfig:
 
 def make_bot_config(
     recall_api_token,
+    speech_kit_api_key,
     speaker_ws_port,
     audio_ws_port,
     notes_port,
@@ -68,6 +69,7 @@ def make_bot_config(
     server_name,
     port,
     min_prompt_len,
+    ffmpeg_path,
 ) -> BotConfig:
     return {
         "RECALL_API_TOKEN": recall_api_token,
@@ -81,6 +83,8 @@ def make_bot_config(
         "SUMM_GETTER_ENDP": f"http://{ip}:{notes_port}/get",
         "SUMM_SAVER_ENDP": f"http://{ip}:{notes_port}/save",
         "SUMM_FINISHER_ENDP": f"http://{ip}:{notes_port}/finish",
+        "YA_SPEECH_KIT_API_KEY": speech_kit_api_key,
+        "FFMPEG_PATH": ffmpeg_path,
     }
 
 
@@ -105,6 +109,8 @@ class Config:
                 port=env.MYSELF_PORT,
                 min_prompt_len=env.MIN_PROMPT_LEN,
                 notes_port=env.NOTES_PORT,
+                ffmpeg_path=env.FFMPEG_PATH,
+                speech_kit_api_key=env.API_KEY_SPEACH_KIT,
             )
 
         return cls._instance
