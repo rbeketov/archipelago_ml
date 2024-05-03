@@ -7,6 +7,7 @@ logger = Logger().get_logger(__name__)
 
 
 def json_error(status_code, description=None):
+    response = None
     if description is None:
         response = jsonify({"error": "Error"})
     else:
