@@ -6,6 +6,7 @@ from ..logger import Logger
 from typing import Callable, Dict, TypedDict, Optional, Union
 from functools import reduce
 from ..speach_kit import YaSpeechToText
+from ..utils import wrap_http_err
 
 from .platform_parser import platform_by_url, Platform
 
@@ -111,14 +112,21 @@ class SummaryRepo:
 
     def save(self, bot_id, summary: str, platform: str, detalization: str) -> bool:
         try:
-            requests.post(
-                self.save_endp,
-                json={
+            req = (
+                {
                     "text": summary,
                     "id": bot_id,
                     "platform": platform,
                     "detalization": detalization,
                 },
+            )
+            logger.info("seq for save: %s", req)
+
+            wrap_http_err(
+                requests.post(
+                    self.save_endp,
+                    json=req,
+                )
             )
             return True
         except Exception as e:
@@ -147,13 +155,15 @@ class SummaryRepo:
 
     def update_role_text(self, bot_id, summary_with_role, role) -> bool:
         try:
-            requests.post(
-                self.save_endp,
-                json={
-                    "text_with_role": summary_with_role,
-                    "role": role,
-                    "id": bot_id,
-                },
+            wrap_http_err(
+                requests.post(
+                    self.save_endp,
+                    json={
+                        "text_with_role": summary_with_role,
+                        "role": role,
+                        "id": bot_id,
+                    },
+                )
             )
             return True
         except Exception as e:
@@ -163,7 +173,7 @@ class SummaryRepo:
 
     def get_summary(self, bot_id) -> Optional[SummaryModel]:
         try:
-            resp = requests.get(f"{self.get_endp}/{bot_id}")
+            resp = wrap_http_err(requests.get(f"{self.get_endp}/{bot_id}"))
             resp_json: SummaryModel = resp.json()
             logger.info("summary_model from repo: %s", resp.json())
             return resp_json

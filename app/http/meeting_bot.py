@@ -209,6 +209,8 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                         platform=summary_model["platform"],
                         date=summary_model["started_at"],
                         is_active=summary_model["active"],
+                        role=summary_model["role"],
+                        detalization=summary_model["detalization"],
                     )
                 )
 
