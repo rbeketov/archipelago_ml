@@ -165,6 +165,7 @@ class SummaryRepo:
         try:
             resp = requests.get(f"{self.get_endp}/{bot_id}")
             resp_json: SummaryModel = resp.json()
+            logger.info("summary_model from repo: %s", resp_json)
             return resp_json
         except Exception as e:
             logger.error("failed to get summary:", e)
