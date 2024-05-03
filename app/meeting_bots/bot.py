@@ -211,7 +211,7 @@ class BotWebHooks(TypedDict):
 
 
 class Bot:
-    from .real_time_audio import RealTimeAudio
+    # from .real_time_audio import RealTimeAudio
 
     def __init__(
         self,
@@ -229,9 +229,9 @@ class Bot:
         self.transcription = FullTranscription()
         self.summary_repo = summary_repo
 
-        from .real_time_audio import RealTimeAudio
+        # from .real_time_audio import RealTimeAudio
 
-        self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
+        # self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
         self.platform = platform
         self.detalization = detalization
@@ -272,9 +272,9 @@ class Bot:
             speech_kit=speech_kit,
         )
 
-    @property
-    def real_time_audio(self) -> Optional["RealTimeAudio"]:
-        return self.real_time_audio
+    # @property
+    # def real_time_audio(self) -> Optional["RealTimeAudio"]:
+    #     return self.real_time_audio
 
     def leave(self):
         resp = self.recall_api.stop_recording(self.bot_id).json()
