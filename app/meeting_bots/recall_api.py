@@ -80,7 +80,7 @@ class RecallApi(RecallApiBase):
         return self.recall_post(f"/api/v1/bot/{bot_id}/leave_call", json_body={})
 
     def recording_state_crit(self, bot_id) -> Union[str, bool]:
-        resp = self.recording_state.json()
+        resp = self.recording_state(bot_id=bot_id).json()
 
         status = resp["status_changes"][-1]
 
