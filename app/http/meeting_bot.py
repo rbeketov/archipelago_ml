@@ -14,6 +14,21 @@ from ..utils import none_unpack
 logger = Logger().get_logger(__name__)
 
 
+# TODO: make method to tranform from summary_model
+def make_summ_response(
+    has_summ, platform, date, summ_text, is_active, role, detalization
+):
+    return {
+        "has_summ": has_summ,
+        "platform": platform,
+        "date": date,
+        "summ_text": summ_text,
+        "is_active": is_active,
+        "role": role,
+        "detalization": detalization,
+    }
+
+
 def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     bot_blueprint = Blueprint("meeting_bot", __name__)
 
@@ -159,7 +174,6 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     @bot_blueprint.route("/get_sum", methods=["POST"])
     def get_sum():
         class RequestFields(StrEnum):
-            # USER_ID = "user_id"
             SUMM_ID = "summ_id"
             ROLE = "role"
 
@@ -179,19 +193,37 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             logger.info(f"bot net: {bot_net}")
 
             # TODO: make sure bot existed
-            summ_with_role, summ_role, active = none_unpack(
-                bot_net.summary_repo.get_summ_with_role(bot_id=bot_id), 3
-            )
-            if (
-                summ_with_role is not None
-                and summ_role == role
-                and summ_with_role != ""
-            ):
-                json_data = {"summ_text": summ_with_role, "has_sum": True}
+            # summ_with_role, summ_role, active = none_unpack(
+            #    bot_net.summary_repo.get_summ_with_role(bot_id=bot_id), 3
+            # )
+            summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
+            if summary_model is None:
+                return json_error(400, description="summary not exists")
 
-            summ, active = none_unpack(bot_net.summary_repo.get_summ(bot_id=bot_id), 2)
+            if summary_model["role"] == role and summary_model["text_with_role"] != "":
+                return jsonify(
+                    make_summ_response(
+                        has_summ=True,
+                        summ_text=summary_model["text_with_role"],
+                        platform=summary_model["platform"],
+                        date=summary_model["started_at"],
+                        is_active=summary_model["active"],
+                    )
+                )
+
+            summ = summary_model["text"]
             if summ is None:
-                return jsonify({"has_sum": False})
+                return jsonify(
+                    make_summ_response(
+                        has_summ=False,
+                        summ_text="",
+                        platform=summary_model["platform"],
+                        date=summary_model["started_at"],
+                        is_active=summary_model["active"],
+                        role=summary_model["role"],
+                        detalization=summary_model["detalization"],
+                    )
+                )
 
             if role != "default":
                 summ = send_request_to_gpt(
@@ -202,7 +234,17 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                     0,
                 )
                 if summ is None:
-                    return jsonify({"has_sum": False})
+                    return jsonify(
+                        make_summ_response(
+                            has_summ=False,
+                            summ_text="",
+                            platform=summary_model["platform"],
+                            date=summary_model["started_at"],
+                            is_active=summary_model["active"],
+                            role=summary_model["role"],
+                            detalization=summary_model["detalization"],
+                        )
+                    )
 
             # TODO:
             # make async (after response)
@@ -212,7 +254,16 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 bot_id=bot_id, summary_with_role=summ, role=role
             )
 
-            json_data = {"summ_text": summ, "has_sum": True}
-            return jsonify(json_data)
+            return jsonify(
+                make_summ_response(
+                    has_summ=True,
+                    summ_text=summ,
+                    platform=summary_model["platform"],
+                    date=summary_model["started_at"],
+                    is_active=summary_model["active"],
+                    role=summary_model["role"],
+                    detalization=summary_model["detalization"],
+                )
+            )
 
     return bot_blueprint

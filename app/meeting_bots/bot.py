@@ -39,7 +39,7 @@ class Transcription(TypedDict):
             sp=SpeakerTranscription(
                 message=message, speaker=speaker, is_final=is_final
             ),
-        ) # type: ignore
+        )  # type: ignore
 
 
 class FullTranscription:
@@ -93,14 +93,15 @@ class FullTranscription:
 
 # ---- SummaryRepo
 class SummaryModel(TypedDict):
-    id:  str
+    id: str
     text: str
     text_with_role: str
-    active:       bool
-    role:         str
-    platform:     str
-    started_at:   str # ????
+    active: bool
+    role: str
+    platform: str
+    started_at: str  # ????
     detalization: str
+
 
 class SummaryRepo:
     def __init__(self, save_endp, get_endp, finish_endp):
@@ -125,7 +126,7 @@ class SummaryRepo:
 
         return False
 
-    '''
+    """
     def update_text(self, summary: str) -> bool:
         try:
             requests.post(
@@ -142,7 +143,7 @@ class SummaryRepo:
             logger.error("failed to save summary:", e)
 
         return False
-    '''
+    """
 
     def update_role_text(self, bot_id, summary_with_role, role) -> bool:
         try:
@@ -201,6 +202,7 @@ class SummaryRepo:
 
         return resp.status_code == 200
 
+
 # ----- Bot
 class BotWebHooks(TypedDict):
     transcription_url: str
@@ -226,6 +228,9 @@ class Bot:
         self.recall_api = recall_api
         self.transcription = FullTranscription()
         self.summary_repo = summary_repo
+
+        from .real_time_audio import RealTimeAudio
+
         self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
         self.platform = platform
@@ -315,4 +320,9 @@ class Bot:
         if summ is not None:
             self.transcription.drop_to_summ(summ)
 
-        self.summary_repo.save(summary=summ, bot_id=self.bot_id, platform=str(self.platform), detalization=self.detalization)
+        self.summary_repo.save(
+            summary=summ,
+            bot_id=self.bot_id,
+            platform=str(self.platform),
+            detalization=self.detalization,
+        )
