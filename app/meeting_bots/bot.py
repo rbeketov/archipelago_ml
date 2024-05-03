@@ -109,6 +109,9 @@ class SummaryRepo:
         self.save_endp = save_endp
         self.get_endp = get_endp
         self.finish_endp = finish_endp
+        self.update_role_text_endp = (
+            "http://185.241.194.125:8899/api/summary/update_text_role"
+        )
 
     def save(self, bot_id, summary: str, platform: str, detalization: str) -> bool:
         try:
@@ -157,7 +160,7 @@ class SummaryRepo:
         try:
             wrap_http_err(
                 requests.post(
-                    self.save_endp,
+                    self.update_role_text_endp,
                     json={
                         "text_with_role": summary_with_role,
                         "role": role,
