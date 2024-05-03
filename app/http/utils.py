@@ -21,6 +21,7 @@ def json_error(status_code, description=None):
 class HttpException400:
     def __init__(self, logger):
         self.logger = logger
+        self.response = None
 
     def __enter__(self):
         return self
@@ -28,7 +29,8 @@ class HttpException400:
     def __exit__(self, exc_type, exc_value, exc_tb):
         if exc_type is not None:
             self.log_err(exc_type=exc_type, exc_value=exc_value)
-            return json_error(400)
+            self.response = json_error(400)
+            return True
 
     def log_err(self, exc_type, exc_value):
         if self.logger is not None:

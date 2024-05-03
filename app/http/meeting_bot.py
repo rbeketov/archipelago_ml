@@ -39,7 +39,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             MEETING_URL = "url"
             SUMMARY_DETAIL = "summary_detail"
 
-        with HttpException400(logger=logger):
+        with HttpException400(logger=logger) as http_e:
             logger.info(f"get req: {request.json}")
             if not request.is_json:
                 return json_error(400, description="Request body must be JSON")
@@ -76,13 +76,14 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                     "summ_id": bot.bot_id,
                 }
             )
+        return http_e.response
 
     @bot_blueprint.route("/stop_recording", methods=["POST"])
     def stop_recording():
         class RequestFields(StrEnum):
             SUMM_ID = "summ_id"
 
-        with HttpException400(logger=logger):
+        with HttpException400(logger=logger) as http_e:
             logger.info(f"get req: {request.json}")
             if not request.is_json:
                 return json_error(400, description="Request body must be JSON")
@@ -99,13 +100,14 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             bot_net.recall_api.stop_recording(bot_id)
 
             return jsonify("OK")
+        return http_e.response
 
     @bot_blueprint.route("/bot_state", methods=["POST"])
     def bot_state():
         class RequestFields(StrEnum):
             SUMM_ID = "summ_id"
 
-        with HttpException400(logger=logger):
+        with HttpException400(logger=logger) as http_e:
             logger.info(f"get req: {request.json}")
             if not request.is_json:
                 return json_error(400, description="Request body must be JSON")
@@ -121,10 +123,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 return jsonify({"state": state})
 
             return jsonify({"state": "ok"})
+        return http_e.response
 
     @bot_blueprint.route("/transcription", methods=["POST"])
     def get_trascription():
-        with HttpException400(logger=logger):
+        with HttpException400(logger=logger) as http_e:
             logger.info(f"webhook /transcription: {request.json}")
 
             payload = request.json["data"]
@@ -170,6 +173,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 bot.add_transcription(Transcription.from_recall_resp(transcript))
 
             return jsonify({"success": True})
+        return http_e.response
 
     @bot_blueprint.route("/get_sum", methods=["POST"])
     def get_sum():
@@ -177,7 +181,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             SUMM_ID = "summ_id"
             ROLE = "role"
 
-        with HttpException400(logger=logger):
+        with HttpException400(logger=logger) as http_e:
             logger.info(f"get req: {request.json}")
             if not request.is_json:
                 return json_error(400, description="Request body must be JSON")
@@ -268,5 +272,6 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                     detalization=summary_model["detalization"],
                 )
             )
+        return http_e.response
 
     return bot_blueprint
