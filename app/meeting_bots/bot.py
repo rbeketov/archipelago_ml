@@ -330,12 +330,12 @@ class Bot:
             summ = summary_cleaner(summ)
             logger.info("cleaned_sum: %s", summ)
 
-        if summ is not None:
+        if summ is not None and summ != "":
             self.transcription.drop_to_summ(summ)
 
-        self.summary_repo.save(
-            summary=summ,
-            bot_id=self.bot_id,
-            platform=str(self.platform),
-            detalization=self.detalization,
-        )
+            self.summary_repo.save(
+                summary=summ,
+                bot_id=self.bot_id,
+                platform=str(self.platform),
+                detalization=self.detalization,
+            )
