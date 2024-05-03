@@ -326,6 +326,9 @@ class Bot:
         summ = summary_transf(self.transcription.to_prompt())
         logger.info("make_summary: %s", summ)
 
+        if summ is None or summ == "":
+            return
+
         if summary_cleaner is not None:
             summ = summary_cleaner(summ)
             logger.info("cleaned_sum: %s", summ)
