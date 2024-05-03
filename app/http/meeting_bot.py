@@ -200,6 +200,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if summary_model is None:
                 return json_error(400, description="summary not exists")
 
+            logger.info("summary_model %s", summary_model)
             if summary_model["role"] == role and summary_model["text_with_role"] != "":
                 return jsonify(
                     make_summ_response(
@@ -212,7 +213,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 )
 
             summ = summary_model["text"]
-            if summ is None:
+            if summ is None or summ == "":
                 return jsonify(
                     make_summ_response(
                         has_summ=False,
