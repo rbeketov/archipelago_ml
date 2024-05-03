@@ -6,7 +6,7 @@ from ..logger import Logger
 from typing import Callable, Dict, TypedDict, Optional, Union
 from functools import reduce
 from ..speach_kit import YaSpeechToText
-from ..utils import wrap_http_err
+from ..utils import wrap_http_err, HTTPStatusException
 
 from .platform_parser import platform_by_url, Platform
 
@@ -166,8 +166,8 @@ class SummaryRepo:
                 )
             )
             return True
-        except Exception as e:
-            logger.error("failed to update summary text role:", e)
+        except HTTPStatusException as e:
+            logger.error("failed to update summary text role:", e.res)
 
         return False
 
