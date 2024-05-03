@@ -257,9 +257,10 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             # make async (after response)
             # dont dublicate input if role is default
             # handle update_res == False
-            update_res = bot_net.summary_repo.update_role_text(
-                bot_id=bot_id, summary_with_role=summ, role=role
-            )
+            if summ != "":
+                update_res = bot_net.summary_repo.update_role_text(
+                    bot_id=bot_id, summary_with_role=summ, role=role
+                )
 
             return jsonify(
                 make_summ_response(
