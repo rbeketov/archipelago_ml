@@ -14,7 +14,7 @@ def json_error(status_code, description=None):
         response = jsonify({"error": description})
 
     response.status_code = status_code
-    logger.error(response)
+    logger.error("response in json_error: %s", response)
     return response
 
 
