@@ -115,14 +115,13 @@ class SummaryRepo:
 
     def save(self, bot_id, summary: str, platform: str, detalization: str) -> bool:
         try:
-            req = (
-                {
-                    "text": summary,
-                    "id": bot_id,
-                    "platform": platform,
-                    "detalization": detalization,
-                },
-            )
+            req = {
+                "text": summary,
+                "id": bot_id,
+                "platform": platform,
+                "detalization": detalization,
+            }
+
             logger.info("seq for save: %s", req)
 
             wrap_http_err(
@@ -132,8 +131,8 @@ class SummaryRepo:
                 )
             )
             return True
-        except Exception as e:
-            logger.error("failed to save summary:", e)
+        except HTTPStatusException as e:
+            logger.error("failed to save summary: %s", e.res)
 
         return False
 
