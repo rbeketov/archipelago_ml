@@ -229,7 +229,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 summ = send_request_to_gpt(
                     summ,
                     config.env.MODEL_URI_GPT,
-                    config.prompts.SystemPromts.STYLE(role),
+                    config.prompts.STYLE(role),
                     config.env.API_KEY,
                     0,
                 )
