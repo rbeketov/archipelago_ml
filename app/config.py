@@ -80,9 +80,9 @@ def make_bot_config(
             "transcription_url": f"http://{ip}:{port}/transcription",
         },
         "MIN_PROMPT_LEN": min_prompt_len,
-        "SUMM_GETTER_ENDP": f"http://{ip}:{notes_port}/get",
-        "SUMM_SAVER_ENDP": f"http://{ip}:{notes_port}/save",
-        "SUMM_FINISHER_ENDP": f"http://{ip}:{notes_port}/finish",
+        "SUMM_GETTER_ENDP": f"http://{ip}:{notes_port}/summary/get",
+        "SUMM_SAVER_ENDP": f"http://{ip}:{notes_port}/summary/save",
+        "SUMM_FINISHER_ENDP": f"http://{ip}:{notes_port}/summary/finish",
         "YA_SPEECH_KIT_API_KEY": speech_kit_api_key,
         "FFMPEG_PATH": ffmpeg_path,
     }
