@@ -131,7 +131,7 @@ class Config:
                 ffmpeg_path=env.FFMPEG_PATH,
                 speech_kit_api_key=env.API_KEY_SPEACH_KIT,
                 gpt_api_key=env.API_KEY,
-                gpt_model_uri=env.MODEL_URI_SUMM,
+                gpt_model_uri=env.MODEL_URI_GPT,
                 summ_transfer_temp=env.SUMM_TRANSFER_TEMP,
                 summ_transfer_prompt=prompts.SUMMARAIZE_WITH_DETAIL,
                 summ_cleaner_temp=env.SUMM_CLEANER_TEMP,

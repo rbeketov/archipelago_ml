@@ -129,30 +129,8 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 bot.add_transcription(Transcription.from_recall_resp(transcript))
                 return jsonify({"success": True})
 
-            # TODO:
-            # move this inside bot
-            summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
-            if summary_model is None:
-                return jsonify({"success": True})
-
-            detalization = summary_model["detalization"]
-            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(detalization)
-
             bot = bot_net.try_restore_bot(
                 bot_id=bot_id,
-                summary_transf=gpt_req_sender(
-                    config.env.MODEL_URI_GPT,
-                    summary_detail_prompt,
-                    config.env.API_KEY,
-                    0,
-                ),
-                summary_interval_sec=config.env.SUMMARY_INTERVAL,
-                summary_cleaner=gpt_req_sender(
-                    config.env.MODEL_URI_GPT,
-                    config.prompts.CLEAN_SUMMARIZATION,
-                    config.env.API_KEY,
-                    0,
-                ),
             )
 
             if bot is None:
@@ -225,9 +203,6 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
 # returns dict or status code
 def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict, int]:
     # TODO: make sure bot existed
-    # summ_with_role, summ_role, active = none_unpack(
-    #    bot_net.summary_repo.get_summ_with_role(bot_id=bot_id), 3
-    # )
     summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
     if summary_model is None:
         return (error_resp(description="summary not exists"), 400)
