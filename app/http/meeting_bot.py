@@ -223,7 +223,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                     bot_net=bot_net, bot_id=bot_id, role=role, config=config
                 )
 
-                if r != 200:
+                if status != 200:
                     return resp(r, status)
 
                 batch_resp.append(r)
