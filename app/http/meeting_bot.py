@@ -218,7 +218,9 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 if not role or role == "":
                     return json_error(400, description="role is required")
 
-                r, status = get_summ_helper(bot_net=bot_net, bot_id=bot_id, role=role)
+                r, status = get_summ_helper(
+                    bot_net=bot_net, bot_id=bot_id, role=role, config=config
+                )
 
                 if r != 200:
                     return resp(r, status)
