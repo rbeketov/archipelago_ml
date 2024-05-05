@@ -1,10 +1,11 @@
+from typing import Optional
 from strenum import StrEnum
 from flask import Blueprint
-from flask import request, jsonify
+from flask import request, jsonify, Response
 
 from ..config import Config
 from ..gpt_utils import gpt_req_sender, send_request_to_gpt
-from .utils import json_error, HttpException400
+from .utils import json_error, HttpException400, error_resp, resp
 from ..logger import Logger
 
 from ..meeting_bots import BotNet
@@ -16,9 +17,10 @@ logger = Logger().get_logger(__name__)
 
 # TODO: make method to tranform from summary_model
 def make_summ_response(
-    has_summ, platform, date, summ_text, is_active, role, detalization
+    id, has_summ, platform, date, summ_text, is_active, role, detalization
 ):
     return {
+        "id": id,
         "has_summ": has_summ,
         "platform": platform,
         "date": date,
@@ -194,85 +196,125 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not role or role == "":
                 return json_error(400, description="role is required")
 
-            logger.info(f"bot net: {bot_net}")
+            return resp(*get_summ_helper(bot_net=bot_net, bot_id=bot_id, role=role))
+        return http_e.response
 
-            # TODO: make sure bot existed
-            # summ_with_role, summ_role, active = none_unpack(
-            #    bot_net.summary_repo.get_summ_with_role(bot_id=bot_id), 3
-            # )
-            summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
-            if summary_model is None:
-                return json_error(400, description="summary not exists")
+    @bot_blueprint.route("/batch_get_sum", methods=["POST"])
+    def batch_get_sum():
+        with HttpException400(logger=logger) as http_e:
+            logger.info(f"get req: {request.json}")
+            if not request.is_json:
+                return json_error(400, description="Request body must be JSON")
 
-            logger.info("summary_model %s", summary_model)
-            if summary_model["role"] == role and summary_model["text_with_role"] != "":
-                return jsonify(
-                    make_summ_response(
-                        has_summ=True,
-                        summ_text=summary_model["text_with_role"],
-                        platform=summary_model["platform"],
-                        date=summary_model["started_at"],
-                        is_active=summary_model["active"],
-                        role=summary_model["role"],
-                        detalization=summary_model["detalization"],
-                    )
-                )
+            summaries = request.json["summarizations"]
+            batch_resp: list[dict] = []
 
-            summ = summary_model["text"]
-            if summ is None or summ == "":
-                return jsonify(
-                    make_summ_response(
-                        has_summ=False,
-                        summ_text="",
-                        platform=summary_model["platform"],
-                        date=summary_model["started_at"],
-                        is_active=summary_model["active"],
-                        role=summary_model["role"],
-                        detalization=summary_model["detalization"],
-                    )
-                )
+            for summary in summaries:
+                bot_id = summary["summ_id"]
+                if not bot_id:
+                    return json_error(400, description="summ_id is required")
 
-            if role != "default":
-                summ = send_request_to_gpt(
-                    summ,
-                    config.env.MODEL_URI_GPT,
-                    config.prompts.STYLE(role),
-                    config.env.API_KEY,
-                    0,
-                )
-                if summ is None:
-                    return jsonify(
-                        make_summ_response(
-                            has_summ=False,
-                            summ_text="",
-                            platform=summary_model["platform"],
-                            date=summary_model["started_at"],
-                            is_active=summary_model["active"],
-                            role=summary_model["role"],
-                            detalization=summary_model["detalization"],
-                        )
-                    )
+                role = summary["role"]
+                if not role or role == "":
+                    return json_error(400, description="role is required")
 
-            # TODO:
-            # make async (after response)
-            # dont dublicate input if role is default
-            # handle update_res == False
-            if summ != "":
-                update_res = bot_net.summary_repo.update_role_text(
-                    bot_id=bot_id, summary_with_role=summ, role=role
-                )
+                r, status = get_summ_helper(bot_net=bot_net, bot_id=bot_id, role=role)
 
-            return jsonify(
+                if r != 200:
+                    return resp(r, status)
+
+                batch_resp.append(r)
+
+            return resp({"summarizations": batch_resp}, 200)
+        return http_e.response
+
+    return bot_blueprint
+
+
+# returns dict or status code
+def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict, int]:
+    # TODO: make sure bot existed
+    # summ_with_role, summ_role, active = none_unpack(
+    #    bot_net.summary_repo.get_summ_with_role(bot_id=bot_id), 3
+    # )
+    summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
+    if summary_model is None:
+        return (error_resp(description="summary not exists"), 400)
+
+    logger.info("summary_model %s", summary_model)
+    if summary_model["role"] == role and summary_model["text_with_role"] != "":
+        return (
+            make_summ_response(
+                id=bot_id,
+                has_summ=True,
+                summ_text=summary_model["text_with_role"],
+                platform=summary_model["platform"],
+                date=summary_model["started_at"],
+                is_active=summary_model["active"],
+                role=summary_model["role"],
+                detalization=summary_model["detalization"],
+            ),
+            200,
+        )
+
+    summ = summary_model["text"]
+    if summ is None or summ == "":
+        return (
+            make_summ_response(
+                id=bot_id,
+                has_summ=False,
+                summ_text="",
+                platform=summary_model["platform"],
+                date=summary_model["started_at"],
+                is_active=summary_model["active"],
+                role=summary_model["role"],
+                detalization=summary_model["detalization"],
+            ),
+            200,
+        )
+
+    if role != "default":
+        summ = send_request_to_gpt(
+            summ,
+            config.env.MODEL_URI_GPT,
+            config.prompts.STYLE(role),
+            config.env.API_KEY,
+            0,
+        )
+        if summ is None:
+            return (
                 make_summ_response(
-                    has_summ=True,
-                    summ_text=summ,
+                    id=bot_id,
+                    has_summ=False,
+                    summ_text="",
                     platform=summary_model["platform"],
                     date=summary_model["started_at"],
                     is_active=summary_model["active"],
                     role=summary_model["role"],
                     detalization=summary_model["detalization"],
-                )
+                ),
+                200,
             )
-        return http_e.response
 
-    return bot_blueprint
+    # TODO:
+    # make async (after response)
+    # dont dublicate input if role is default
+    # handle update_res == False
+    if summ != "":
+        update_res = bot_net.summary_repo.update_role_text(
+            bot_id=bot_id, summary_with_role=summ, role=role
+        )
+
+    return (
+        make_summ_response(
+            id=bot_id,
+            has_summ=True,
+            summ_text=summ,
+            platform=summary_model["platform"],
+            date=summary_model["started_at"],
+            is_active=summary_model["active"],
+            role=summary_model["role"],
+            detalization=summary_model["detalization"],
+        ),
+        200,
+    )

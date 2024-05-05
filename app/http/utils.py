@@ -6,12 +6,23 @@ from ..utils import HTTPStatusException
 logger = Logger().get_logger(__name__)
 
 
+def resp(r, status_code):
+    response = jsonify(r)
+    response.status_code = status_code
+    return response
+
+
+def error_resp(description=None):
+    if description is None:
+        return {"error": "Error"}
+
+    return {"error": description}
+
+
 def json_error(status_code, description=None):
     response = None
-    if description is None:
-        response = jsonify({"error": "Error"})
-    else:
-        response = jsonify({"error": description})
+
+    response = jsonify(error_resp(description=description))
 
     response.status_code = status_code
     logger.error("response in json_error: %s", response.json)
