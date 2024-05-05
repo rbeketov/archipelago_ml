@@ -196,8 +196,8 @@ class BotNet:
             speech_kit=self.speech_kit,
             leave_callback=self._get_leave_callback(),
         )
-        self.summary_repo.save(
-            summary="",
+
+        self.summary_repo.init_summary(
             bot_id=bot.bot_id,
             platform=str(bot.platform),
             detalization=detalization,
