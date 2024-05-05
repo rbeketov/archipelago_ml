@@ -239,7 +239,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
             200,
         )
 
-    if role != "default":
+    if role != "default" and role != "обычный":
         summ = send_request_to_gpt(
             summ,
             config.env.MODEL_URI_GPT,
@@ -247,7 +247,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
             config.env.API_KEY,
             0,
         )
-        if summ is None:
+        if summ is None or summ == "":
             return (
                 make_summ_response(
                     id=bot_id,
@@ -266,10 +266,9 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
     # make async (after response)
     # dont dublicate input if role is default
     # handle update_res == False
-    if summ != "":
-        update_res = bot_net.summary_repo.update_role_text(
-            bot_id=bot_id, summary_with_role=summ, role=role
-        )
+    update_res = bot_net.summary_repo.update_role_text(
+        bot_id=bot_id, summary_with_role=summ, role=role
+    )
 
     return (
         make_summ_response(
