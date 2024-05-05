@@ -210,6 +210,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             batch_resp: list[dict] = []
 
             for summary in summaries:
+                logger.info("for summary in summaries: %s", summary)
                 bot_id = summary["summ_id"]
                 if not bot_id:
                     return json_error(400, description="summ_id is required")
@@ -226,6 +227,8 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                     return resp(r, status)
 
                 batch_resp.append(r)
+
+            logger.info("batch_resp: %s", batch_resp)
 
             return resp({"summarizations": batch_resp}, 200)
         return http_e.response
