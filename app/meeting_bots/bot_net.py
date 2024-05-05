@@ -3,7 +3,8 @@ from threading import Lock
 from typing import Dict, Optional, TypedDict, Callable
 
 import schedule
-from app.logger import Logger
+from ..gpt_utils import gpt_req_sender
+from ..logger import Logger
 from .bot import Bot, BotWebHooks, SummaryRepo  # TODO: SummaryRepo maybe cyclic
 from ..speach_kit import YaSpeechToText
 from .recall_ws_hooks import RecallWsHooks  # TODO: maybe cyclic
@@ -22,12 +23,19 @@ class BotConfig(TypedDict):
     SUMM_SAVER_ENDP: str
     SUMM_GETTER_ENDP: str
     SUMM_FINISHER_ENDP: str
+    GPT_MODEL_URL: str
+    GPT_API_KEY: str
+    SUMM_TRANSFER_TEMP: int
+    SUMM_CLEANER_TEMP: int
+    SUMM_TRANSFER_PROMPT: str | Callable  # callable is for prompts with detaliziation
+    SUMM_CLEANER_PROMPT: str
+    SUMM_INTERVAL_SEC: int
 
 
 # bot can be accessed by user id (string)
 class BotNet:
     def __init__(self, config: BotConfig):
-        self.botnet: Dict[str, Bot] = {} # bot_id: Bot
+        self.botnet: Dict[str, Bot] = {}  # bot_id: Bot
         # self.user_id_by_bot_id = {}
 
         # self.jobs_by_bot: Dict[str, List[schedule.Job]] = {}
@@ -40,6 +48,10 @@ class BotNet:
         self.config = config
 
         self._ws_hooks = RecallWsHooks(self)
+
+        self.summary_baker = SummaryBaker(
+            gpt_model_uri=config["GPT_MODEL_URL"], gpt_api_key=config["GPT_API_KEY"]
+        )
 
         self.summary_repo = SummaryRepo(
             save_endp=self.config["SUMM_SAVER_ENDP"],
@@ -65,16 +77,36 @@ class BotNet:
     def _setup_bot(
         self,
         bot: Bot,
-        summary_transf: Callable,
-        summary_interval_sec,
-        summary_cleaner: Optional[Callable],
+        transf_with_detalization: bool = True,
+        with_cleaner: bool = True,
     ):
         with self.mutex:
             self.botnet[bot.bot_id] = bot
+
+        summary_transf_prompt = (
+            self.config["SUMM_TRANSFER_PROMPT"](bot.detalization)
+            if transf_with_detalization
+            else self.config["SUMM_TRANSFER_PROMPT"]
+        )
+
+        summary_transf = self.summary_baker.get_callback(
+            prompt=summary_transf_prompt,
+            temperature=self.config["SUMM_TRANSFER_TEMP"],
+        )
+
+        summary_cleaner = (
+            self.summary_baker.get_callback(
+                prompt=self.config["SUMM_CLEANER_PROMPT"],
+                temperature=self.config["SUMM_CLEANER_TEMP"],
+            )
+            if with_cleaner
+            else None
+        )
+
         self._schedule_jobs_for_bot(
             bot=bot,
             summary_transf=summary_transf,
-            summary_interval_sec=summary_interval_sec,
+            summary_interval_sec=self.config["SUMM_INTERVAL_SEC"],
             summary_cleaner=summary_cleaner,
         )
 
@@ -82,14 +114,14 @@ class BotNet:
         self,
     ):
         def leave_callback(bot: Bot):
-                logger.info("leaving")
-                bot.summary_repo.finish(bot_id=bot.bot_id)
+            logger.info("leaving")
+            bot.summary_repo.finish(bot_id=bot.bot_id)
 
-                # TODO: remove _stop_jobs.from mutex
-                with self.mutex:
-                    self.botnet.pop(bot.bot_id, None)
-                    BotNet._stop_jobs(self.jobs_by_bot.get(bot.bot_id, None))
-                    self.jobs_by_bot.pop(bot.bot_id, None)
+            # TODO: remove _stop_jobs.from mutex
+            with self.mutex:
+                self.botnet.pop(bot.bot_id, None)
+                BotNet._stop_jobs(self.jobs_by_bot.get(bot.bot_id, None))
+                self.jobs_by_bot.pop(bot.bot_id, None)
 
         return leave_callback
 
@@ -126,9 +158,7 @@ class BotNet:
                 logger.info("stopping summary_scheduler")
                 self._get_leave_callback()(bot)
 
-        job1 = schedule.every(summary_interval_sec).seconds.do(
-            summary_scheduler
-        )
+        job1 = schedule.every(summary_interval_sec).seconds.do(summary_scheduler)
         # job2 = schedule.every(20).seconds.do(transcript_scheduler)
         job3 = schedule.every(30).seconds.do(check_stop_schedurer)
 
@@ -155,9 +185,6 @@ class BotNet:
         self,
         meetring_url: str,
         detalization: str,
-        summary_transf: Callable,
-        summary_interval_sec,
-        summary_cleaner: Optional[Callable],
     ):
         bot = Bot.from_join_meeting(
             bot_name=self.config["NAME"],
@@ -167,26 +194,25 @@ class BotNet:
             summary_repo=self.summary_repo,
             webhooks=self.config["WEBHOOKS"],
             speech_kit=self.speech_kit,
-            leave_callback=self._get_leave_callback(), # TODO
+            leave_callback=self._get_leave_callback(),
         )
-        self.summary_repo.save(summary="", bot_id=bot.bot_id, platform=str(bot.platform), detalization=detalization)
+        self.summary_repo.save(
+            summary="",
+            bot_id=bot.bot_id,
+            platform=str(bot.platform),
+            detalization=detalization,
+        )
 
         self._setup_bot(
             bot=bot,
-            summary_transf=summary_transf,
-            summary_interval_sec=summary_interval_sec,
-            summary_cleaner=summary_cleaner,
         )
+
         return bot
 
     def try_restore_bot(
         self,
         bot_id,
-        summary_transf: Callable,
-        summary_interval_sec,
-        summary_cleaner: Optional[Callable],
     ) -> Optional[Bot]:
-
         summary_model = self.summary_repo.get_summary(bot_id)
         if summary_model is None or not summary_model["active"]:
             return None
@@ -197,6 +223,7 @@ class BotNet:
 
         from .recall_api import RecallApi
         from .platform_parser import Platform
+
         bot = Bot(
             bot_id=bot_id,
             detalization=detalization,
@@ -209,18 +236,12 @@ class BotNet:
         bot.transcription.drop_to_summ(summary=summ)
         self._setup_bot(
             bot=bot,
-            summary_transf=summary_transf,
-            summary_interval_sec=summary_interval_sec,
-            summary_cleaner=summary_cleaner,
         )
         return bot
 
     def get_by_id_or_try_restore(
         self,
         bot_id,
-        summary_transf: Callable,
-        summary_interval_sec,
-        summary_cleaner: Optional[Callable],
     ):
         bot = self.get_by_bot_id(bot_id=bot_id)
         if bot is not None:
@@ -229,9 +250,6 @@ class BotNet:
         logger.info("trying to restore bot")
         bot = self.try_restore_bot(
             bot_id=bot_id,
-            summary_transf=summary_transf,
-            summary_interval_sec=summary_interval_sec,
-            summary_cleaner=summary_cleaner,
         )
 
         if bot is not None:
@@ -242,4 +260,19 @@ class BotNet:
     @property
     def recall_api(self):
         from .recall_api import RecallApi
+
         return RecallApi(recall_api_token=self.config["RECALL_API_TOKEN"])
+
+
+class SummaryBaker:
+    def __init__(self, gpt_model_uri, gpt_api_key):
+        self.gpt_model_uri = gpt_model_uri
+        self.gpt_api_key = gpt_api_key
+
+    def get_callback(self, prompt, temperature):
+        return gpt_req_sender(
+            self.gpt_model_uri,
+            prompt,
+            self.gpt_api_key,
+            temperature,
+        )

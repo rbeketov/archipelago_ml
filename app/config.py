@@ -52,6 +52,9 @@ class EnvConfig:
         self.SPEAKER_WS_PORT = int("8078")
         self.NOTES_PORT = int("8899")
 
+        self.SUMM_TRANSFER_TEMP = int("0")
+        self.SUMM_CLEANER_TEMP = int("0")
+
     def env_or_panic(key: str):
         env = os.environ.get(key)
         if env == "" or env is None:
@@ -70,6 +73,13 @@ def make_bot_config(
     port,
     min_prompt_len,
     ffmpeg_path,
+    gpt_model_uri,
+    gpt_api_key,
+    summ_transfer_temp,
+    summ_cleaner_temp,
+    summ_transfer_prompt,
+    summ_cleaner_prompt,
+    summ_interval_sec,
 ) -> BotConfig:
     return {
         "RECALL_API_TOKEN": recall_api_token,
@@ -85,6 +95,13 @@ def make_bot_config(
         "SUMM_FINISHER_ENDP": f"http://{ip}:{notes_port}/api/summary/finish",
         "YA_SPEECH_KIT_API_KEY": speech_kit_api_key,
         "FFMPEG_PATH": ffmpeg_path,
+        "GPT_MODEL_URL": gpt_model_uri,
+        "GPT_API_KEY": gpt_api_key,
+        "SUMM_TRANSFER_TEMP": summ_transfer_temp,
+        "SUMM_CLEANER_TEMP": summ_cleaner_temp,
+        "SUMM_TRANSFER_PROMPT": summ_transfer_prompt,
+        "SUMM_CLEANER_PROMPT": summ_cleaner_prompt,
+        "SUMM_INTERVAL_SEC": summ_interval_sec,
     }
 
 
@@ -93,11 +110,13 @@ class Config:
 
     _env_config: EnvConfig = None
     _bot_config: BotConfig = None
+    _system_prompts: SystemPromts = None
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(Config, cls).__new__(cls, *args, **kwargs)
 
+            prompts = SystemPromts  # TODO: check
             env = EnvConfig()
             cls._env_config = env
             cls._bot_config = make_bot_config(
@@ -111,7 +130,15 @@ class Config:
                 notes_port=env.NOTES_PORT,
                 ffmpeg_path=env.FFMPEG_PATH,
                 speech_kit_api_key=env.API_KEY_SPEACH_KIT,
+                gpt_api_key=env.API_KEY,
+                gpt_model_uri=env.MODEL_URI_SUMM,
+                summ_transfer_temp=env.SUMM_TRANSFER_TEMP,
+                summ_transfer_prompt=prompts.SUMMARAIZE_WITH_DETAIL,
+                summ_cleaner_temp=env.SUMM_CLEANER_TEMP,
+                summ_cleaner_prompt=prompts.CLEAN_SUMMARIZATION,
+                summ_interval_sec=env.SUMMARY_INTERVAL,
             )
+            cls._system_prompts = prompts
 
         return cls._instance
 

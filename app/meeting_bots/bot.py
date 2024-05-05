@@ -113,6 +113,29 @@ class SummaryRepo:
             "http://185.241.194.125:8899/api/summary/update_text_role"
         )
 
+    def init_summary(self, bot_id, platform: str, detalization: str) -> bool:
+        try:
+            req = {
+                "text": "",
+                "id": bot_id,
+                "platform": platform,
+                "detalization": detalization,
+            }
+
+            logger.info("seq for init summary: %s", req)
+
+            wrap_http_err(
+                requests.post(
+                    self.save_endp,
+                    json=req,
+                )
+            )
+            return True
+        except HTTPStatusException as e:
+            logger.error("failed to save summary: %s", e.res)
+
+        return False
+
     def save(self, bot_id, summary: str, platform: str, detalization: str) -> bool:
         try:
             req = {
@@ -135,25 +158,6 @@ class SummaryRepo:
             logger.error("failed to save summary: %s", e.res)
 
         return False
-
-    """
-    def update_text(self, summary: str) -> bool:
-        try:
-            requests.post(
-                self.save_endp,
-                json={
-                    "text": summary,
-                    "id": bot_id,
-                    "platform": platform,
-                    "detalization": detalization,
-                },
-            )
-            return True
-        except Exception as e:
-            logger.error("failed to save summary:", e)
-
-        return False
-    """
 
     def update_role_text(self, bot_id, summary_with_role, role) -> bool:
         try:

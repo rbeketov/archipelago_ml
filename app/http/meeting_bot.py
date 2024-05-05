@@ -49,7 +49,6 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             detalization = request.get_json().get(
                 RequestFields.SUMMARY_DETAIL, "Средняя"
             )
-            summary_detail_prompt = config.prompts.SUMMARAIZE_WITH_DETAIL(detalization)
 
             meeting_url = request.get_json().get(RequestFields.MEETING_URL)
             if not meeting_url:
@@ -58,19 +57,6 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             bot = bot_net.join_meeting(
                 meetring_url=meeting_url,
                 detalization=detalization,
-                summary_transf=gpt_req_sender(
-                    config.env.MODEL_URI_GPT,
-                    summary_detail_prompt,
-                    config.env.API_KEY,
-                    0,
-                ),
-                summary_interval_sec=config.env.SUMMARY_INTERVAL,
-                summary_cleaner=gpt_req_sender(
-                    config.env.MODEL_URI_GPT,
-                    config.prompts.CLEAN_SUMMARIZATION,
-                    config.env.API_KEY,
-                    0,
-                ),
             )
 
             return jsonify(
