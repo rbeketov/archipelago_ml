@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import colorlog
+import inspect
 
 LOGS_DIR = "logs/"
 
@@ -57,7 +58,7 @@ class Logger(metaclass=Singleton):
 
 def default_serializer(o):
     if callable(o):
-        return o.__name__
+        return inspect.getsource(o)
 
     return "Unknown type"
 
