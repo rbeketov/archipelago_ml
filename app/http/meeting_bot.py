@@ -19,7 +19,7 @@ logger = Logger().get_logger(__name__)
 
 # TODO: make method to tranform from summary_model
 def make_summ_response(
-    id, has_summ, platform, date, summ_text, is_active, role, detalization
+    id, has_summ, platform, date, summ_text, is_active, role, detalization, name
 ):
     return {
         "id": id,
@@ -30,6 +30,7 @@ def make_summ_response(
         "is_active": is_active,
         "role": role,
         "detalization": detalization,
+        "name": name,
     }
 
 
@@ -230,6 +231,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
                 is_active=summary_model["active"],
                 role=summary_model["role"],
                 detalization=summary_model["detalization"],
+                name=summary_model["name"],
             ),
             200,
         )
@@ -246,6 +248,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
                 is_active=summary_model["active"],
                 role=summary_model["role"],
                 detalization=summary_model["detalization"],
+                name=summary_model["name"],
             ),
             200,
         )
@@ -269,6 +272,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
                     is_active=summary_model["active"],
                     role=summary_model["role"],
                     detalization=summary_model["detalization"],
+                    name=summary_model["name"],
                 ),
                 200,
             )
@@ -291,6 +295,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
             is_active=summary_model["active"],
             role=role,
             detalization=summary_model["detalization"],
+            name=summary_model["name"],
         ),
         200,
     )

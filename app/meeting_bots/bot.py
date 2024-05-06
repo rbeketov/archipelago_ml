@@ -102,6 +102,7 @@ class SummaryModel(TypedDict):
     platform: str
     started_at: str  # ????
     detalization: str
+    name: str
 
 
 class SummaryRepo:
