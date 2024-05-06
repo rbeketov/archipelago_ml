@@ -306,6 +306,9 @@ class SummaryActiveCleaner:
         for summary in active_summaries:
             bot_id = summary["id"]
             if self.recall_api.recording_state_crit(bot_id=bot_id) is not True:
-                self.summary_repo.finish(bot_id=bot_id)
+                finish_res = self.summary_repo.finish(bot_id=bot_id)
+
+                if finish_res:
+                    logger.info("cleaned summary with id: %s", bot_id)
 
         return True
