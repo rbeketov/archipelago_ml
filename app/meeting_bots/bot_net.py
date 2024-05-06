@@ -5,7 +5,11 @@ from typing import Dict, Optional, TypedDict, Callable
 import schedule
 from ..gpt_utils import gpt_req_sender
 from ..logger import Logger
-from .bot import Bot, BotWebHooks, SummaryRepo  # TODO: SummaryRepo maybe cyclic
+from .bot import (
+    Bot,
+    BotWebHooks,
+    SummaryRepo,
+)  # TODO: SummaryRepo maybe cyclic
 from ..speach_kit import YaSpeechToText
 from .recall_ws_hooks import RecallWsHooks  # TODO: maybe cyclic
 
@@ -34,7 +38,7 @@ class BotConfig(TypedDict):
 
 # bot can be accessed by user id (string)
 class BotNet:
-    def __init__(self, config: BotConfig):
+    def __init__(self, config: BotConfig, clean_non_active=True):
         self.botnet: Dict[str, Bot] = {}  # bot_id: Bot
         # self.user_id_by_bot_id = {}
 
@@ -63,6 +67,11 @@ class BotNet:
             api_key=config["YA_SPEECH_KIT_API_KEY"],
             ffmpeg_path=config["FFMPEG_PATH"],
         )
+
+        if clean_non_active:
+            clean_res = SummaryActiveCleaner(
+                summary_repo=self.summary_repo, recall_api=self.recall_api
+            ).clean()
 
     @property
     def ws_hooks(self) -> RecallWsHooks:
@@ -276,3 +285,27 @@ class SummaryBaker:
             self.gpt_api_key,
             temperature,
         )
+
+
+class SummaryActiveCleaner:
+    from .recall_api import RecallApi
+
+    def __init__(self, summary_repo: SummaryRepo, recall_api: RecallApi):
+        self.summary_repo = summary_repo
+        self.recall_api = recall_api
+
+    def clean(self) -> bool:
+        from .bot import SummaryModel
+
+        active_summaries: list[SummaryModel] | None = (
+            self.summary_repo.get_active_summaries()
+        )
+        if active_summaries is None:
+            return False
+
+        for summary in active_summaries:
+            bot_id = summary["id"]
+            if self.recall_api.recording_state_crit(bot_id=bot_id) is not True:
+                self.summary_repo.finish(bot_id=bot_id)
+
+        return True

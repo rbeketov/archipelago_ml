@@ -109,8 +109,13 @@ class SummaryRepo:
         self.save_endp = save_endp
         self.get_endp = get_endp
         self.finish_endp = finish_endp
+
+        # TODO:
         self.update_role_text_endp = (
             "http://185.241.194.125:8899/api/summary/update_text_role"
+        )
+        self.get_active_summaries_endp = (
+            "http://185.241.194.125:8899/api/summary/active"
         )
 
     def init_summary(self, bot_id, platform: str, detalization: str) -> bool:
@@ -176,6 +181,17 @@ class SummaryRepo:
             logger.error("failed to update summary text role:", e.res)
 
         return False
+
+    def get_active_summaries(self) -> Optional[list[SummaryModel]]:
+        try:
+            resp = wrap_http_err(requests.get("self.get_active_summaries_endp"))
+            resp_json: list[SummaryModel] = resp.json()
+            logger.info("active summary_models from repo: %s", resp.json())
+            return resp_json
+        except Exception as e:
+            logger.error("failed to get active summaries:", e)
+
+        return None
 
     def get_summary(self, bot_id) -> Optional[SummaryModel]:
         try:
