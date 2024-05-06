@@ -56,8 +56,6 @@ class HttpException400:
 def test_mode(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        test_header = "X-TEST"
-
         if os.environ.get("DEBUG") is not None:
             return _test_mode(f, *args, **kwargs)
 
