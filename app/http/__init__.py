@@ -9,6 +9,7 @@ from ..config import Config
 
 def create_flask_app(bot_net: BotNet):
     app = Flask(__name__)
+    app.config["JSON_AS_ASCII"] = False
     CORS(app)
     config = Config()
 
