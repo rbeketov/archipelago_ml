@@ -5,7 +5,7 @@ from flask import request, jsonify, Response
 
 from ..config import Config
 from ..gpt_utils import gpt_req_sender, send_request_to_gpt
-from .utils import json_error, HttpException400, error_resp, resp
+from .utils import json_error, HttpException400, error_resp, resp, test_mode
 from ..logger import Logger
 
 from ..meeting_bots import BotNet
@@ -142,6 +142,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
         return http_e.response
 
     @bot_blueprint.route("/get_sum", methods=["POST"])
+    @test_mode
     def get_sum():
         class RequestFields(StrEnum):
             SUMM_ID = "summ_id"
@@ -168,6 +169,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
         return http_e.response
 
     @bot_blueprint.route("/batch_get_sum", methods=["POST"])
+    @test_mode
     def batch_get_sum():
         with HttpException400(logger=logger) as http_e:
             logger.info(f"get req: {request.json}")

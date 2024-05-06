@@ -1,4 +1,5 @@
-from flask import jsonify
+from flask import abort, jsonify, request
+from functools import wraps
 
 from ..logger import Logger
 from ..utils import HTTPStatusException
@@ -49,3 +50,16 @@ class HttpException400:
                 logger.error(f"Error: http status: {exc_value.res.json()}")
             else:
                 logger.error(f"Error: {exc_value}")
+
+
+def test_mode(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        test_header = "X-TEST"
+
+        if test_header in request.headers and request.headers[test_header] == "true":
+            return f(*args, **kwargs)
+
+        abort(403)
+
+    return decorated
