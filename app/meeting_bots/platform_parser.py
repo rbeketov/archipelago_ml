@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Platform(Enum):
     ZOOM = 1
     TEEMS = 2
@@ -19,11 +20,13 @@ class Platform(Enum):
 
         raise Exception("Unknown platform name")
 
+
 def platform_by_url(url: str) -> Platform:
     if "zoom" in url:
         return Platform.ZOOM
+    if "meet.google" in url:
+        return Platform.MEET
     # TODO:
     # add other platforms
-
 
     return Platform.ZOOM
