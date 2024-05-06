@@ -160,9 +160,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not bot_id:
                 return json_error(400, description="summ_id is required")
 
-            role = request.get_json().get(RequestFields.ROLE)
-            if not role or role == "":
-                return json_error(400, description="role is required")
+            role = request.get_json().get(RequestFields.ROLE, "")
 
             return resp(
                 *get_summ_helper(
@@ -184,13 +182,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
 
             for summary in summaries:
                 logger.info("for summary in summaries: %s", summary)
-                bot_id = summary["summ_id"]
+                bot_id = summary.get("summ_id")
                 if not bot_id:
                     return json_error(400, description="summ_id is required")
 
-                role = summary["role"]
-                if not role or role == "":
-                    return json_error(400, description="role is required")
+                role = summary.get("role")
 
                 r, status = get_summ_helper(
                     bot_net=bot_net, bot_id=bot_id, role=role, config=config
@@ -209,8 +205,59 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     return bot_blueprint
 
 
+# TODO:
+# если мы отправляем текст без роли, то в роли нужно отправлять дефолтную роль
+# убедиться, что дефолтная роль проставляется
+
+
+def _get_summ_previous(bot_net: BotNet, bot_id) -> tuple[dict, int]:
+    # TODO: make sure bot existed
+    summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
+    if summary_model is None:
+        return (error_resp(description="summary not exists"), 400)
+
+    summ = summary_model["text"]
+    if summ is None or summ == "":
+        return (
+            make_summ_response(
+                id=bot_id,
+                has_summ=False,
+                summ_text="",
+                platform=summary_model["platform"],
+                date=summary_model["started_at"],
+                is_active=summary_model["active"],
+                role=summary_model["role"],
+                detalization=summary_model["detalization"],
+                name=summary_model["name"],
+            ),
+            200,
+        )
+
+    return (
+        make_summ_response(
+            id=bot_id,
+            has_summ=True,
+            summ_text=summary_model["text_with_role"]
+            if summary_model["text_with_role"] != ""
+            else summ,
+            platform=summary_model["platform"],
+            date=summary_model["started_at"],
+            is_active=summary_model["active"],
+            role=summary_model["role"]
+            if summary_model["role"] != ""
+            else default_role(),
+            detalization=summary_model["detalization"],
+            name=summary_model["name"],
+        ),
+        200,
+    )
+
+
 # returns dict or status code
 def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict, int]:
+    if role == "":
+        return _get_summ_previous(bot_net=bot_net, bot_id=bot_id)
+
     if not check_role(role):
         return (error_resp(description="not a valid role"), 400)
 
@@ -277,13 +324,13 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
                 200,
             )
 
-    # TODO:
-    # make async (after response)
-    # dont dublicate input if role is default
-    # handle update_res == False
-    update_res = bot_net.summary_repo.update_role_text(
-        bot_id=bot_id, summary_with_role=summ, role=role
-    )
+        # TODO:
+        # make async (after response)
+        # dont dublicate input if role is default
+        # handle update_res == False
+        update_res = bot_net.summary_repo.update_role_text(
+            bot_id=bot_id, summary_with_role=summ, role=role
+        )
 
     return (
         make_summ_response(
