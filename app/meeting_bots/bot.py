@@ -184,7 +184,7 @@ class SummaryRepo:
 
     def get_active_summaries(self) -> Optional[list[SummaryModel]]:
         try:
-            resp = wrap_http_err(requests.get("self.get_active_summaries_endp"))
+            resp = wrap_http_err(requests.get(self.get_active_summaries_endp))
             resp_json: list[SummaryModel] = resp.json()
             logger.info("active summary_models from repo: %s", resp.json())
             return resp_json
