@@ -58,7 +58,8 @@ class Logger(metaclass=Singleton):
 
 def default_serializer(o):
     if callable(o):
-        return inspect.getsource(o)
+        s = inspect.getsource(o)
+        return o.__name__ if len(s) < 40 else s
 
     return "Unknown type"
 
