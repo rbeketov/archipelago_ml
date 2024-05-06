@@ -3,6 +3,8 @@ from strenum import StrEnum
 from flask import Blueprint
 from flask import request, jsonify, Response
 
+from ..meeting_bots.roles import check_role
+
 from ..config import Config
 from ..gpt_utils import gpt_req_sender, send_request_to_gpt
 from .utils import json_error, HttpException400, error_resp, resp, test_mode
@@ -208,6 +210,9 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
 
 # returns dict or status code
 def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict, int]:
+    if not check_role(role):
+        return (error_resp(description="not a valid role"), 400)
+
     # TODO: make sure bot existed
     summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
     if summary_model is None:
@@ -284,7 +289,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
             platform=summary_model["platform"],
             date=summary_model["started_at"],
             is_active=summary_model["active"],
-            role=summary_model["role"],
+            role=role,
             detalization=summary_model["detalization"],
         ),
         200,
