@@ -55,12 +55,21 @@ class Logger(metaclass=Singleton):
         return logger
 
 
+def default_serializer(o):
+    if callable(o):
+        return o.__name__
+
+    return "Unknown type"
+
+
 class DictPrettierFormat(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return json.dumps(dict(self), indent=4, ensure_ascii=False)
+        return json.dumps(
+            dict(self), indent=4, ensure_ascii=False, default=default_serializer
+        )
 
 
 class _Logger(logging.Logger):
