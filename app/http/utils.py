@@ -1,3 +1,4 @@
+import os
 from flask import abort, jsonify, request
 from functools import wraps
 
@@ -57,9 +58,18 @@ def test_mode(f):
     def decorated(*args, **kwargs):
         test_header = "X-TEST"
 
-        if test_header in request.headers and request.headers[test_header] == "true":
-            return f(*args, **kwargs)
+        if os.environ.get("DEBUG") is not None:
+            return _test_mode(f, *args, **kwargs)
 
-        abort(403)
+        return f(*args, **kwargs)
 
     return decorated
+
+
+def _test_mode(f, *args, **kwargs):
+    test_header = "X-TEST"
+
+    if test_header in request.headers and request.headers[test_header] == "true":
+        return f(*args, **kwargs)
+
+    abort(403)
