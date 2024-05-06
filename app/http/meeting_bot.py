@@ -160,7 +160,11 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
             if not role or role == "":
                 return json_error(400, description="role is required")
 
-            return resp(*get_summ_helper(bot_net=bot_net, bot_id=bot_id, role=role))
+            return resp(
+                *get_summ_helper(
+                    bot_net=bot_net, bot_id=bot_id, role=role, config=config
+                )
+            )
         return http_e.response
 
     @bot_blueprint.route("/batch_get_sum", methods=["POST"])
