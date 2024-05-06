@@ -60,7 +60,7 @@ class DictPrettierFormat(dict):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return json.dumps(dict(self), indent=4)
+        return json.dumps(dict(self), indent=4, ensure_ascii=False)
 
 
 class _Logger(logging.Logger):
