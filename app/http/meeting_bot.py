@@ -3,7 +3,7 @@ from strenum import StrEnum
 from flask import Blueprint
 from flask import request, jsonify, Response
 
-from ..meeting_bots.roles import check_role
+from ..meeting_bots.roles import check_role, default_role
 
 from ..config import Config
 from ..gpt_utils import gpt_req_sender, send_request_to_gpt
@@ -250,7 +250,7 @@ def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict
             200,
         )
 
-    if role != "default" and role != "обычный":
+    if role != default_role():
         summ = send_request_to_gpt(
             summ,
             config.env.MODEL_URI_GPT,
