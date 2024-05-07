@@ -225,11 +225,11 @@ def _get_summ_with_role(
     if not check_role(role):
         return (error_resp(description="not a valid role"), 400)
 
-    if role == summ_model["role"]:
-        return _get_summ_previous_with_role(summ_model)
-
     if role == default_role():
         return _get_summ_previous(summ_model)
+
+    if role == summ_model["role"]:
+        return _get_summ_previous_with_role(summ_model)
 
     new_rolled_summ_text = send_request_to_gpt(
         summ_model["text"],
