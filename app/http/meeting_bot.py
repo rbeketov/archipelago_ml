@@ -196,7 +196,7 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 if not bot_id:
                     return json_error(400, description="summ_id is required")
 
-                role = summary.get("role")
+                role = summary.get("role", "")
 
                 r, status = get_summ_helper(
                     summary_repo=bot_net.summary_repo,
