@@ -35,7 +35,9 @@ def make_summ_response(summ: SummaryModel, **kwargs):
             "name": summ["name"],
         }
 
-    return {**into_transfer(summ), **kwargs}
+    r = {**into_transfer(summ), **kwargs}
+    logger.info("make_summ_response: %s", r)
+    return r
 
 
 def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
