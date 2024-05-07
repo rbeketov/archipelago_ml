@@ -75,7 +75,9 @@ def send_request_to_gpt(
     logger.debug(f"send_request_to_gpt response: {response.json()}")
 
     try:
-        resp_res = response.json()["result"]["alternatives"][0]["message"]["text"]
+        resp_json = response.json()
+        logger.info(resp_json)
+        resp_res = resp_json["result"]["alternatives"][0]["message"]["text"]
     except Exception as e:
         logger.error(f"send_request_to_gpt: {e}")
         return None
