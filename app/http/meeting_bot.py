@@ -14,24 +14,28 @@ from ..meeting_bots import BotNet
 
 from ..utils import none_unpack
 
+from ..meeting_bots.bot import SummaryModel, SummaryRepo  # may be cyclic
+
 logger = Logger().get_logger(__name__)
 
 
 # TODO: make method to tranform from summary_model
-def make_summ_response(
-    id, has_summ, platform, date, summ_text, is_active, role, detalization, name
-):
-    return {
-        "id": id,
-        "has_summ": has_summ,
-        "platform": platform,
-        "date": date,
-        "summ_text": summ_text,
-        "is_active": is_active,
-        "role": role,
-        "detalization": detalization,
-        "name": name,
-    }
+def make_summ_response(summ: SummaryModel, **kwargs):
+    def into_transfer(summ: SummaryModel):
+        # need to add has_summ and summ_text
+        return {
+            "id": summ["id"],
+            "has_summ": False,
+            "summ_text": "",
+            "platform": summ["platform"],
+            "date": summ["started_at"],
+            "is_active": summ["active"],
+            "role": summ["role"],
+            "detalization": summ["detalization"],
+            "name": summ["name"],
+        }
+
+    return {**into_transfer(summ), **kwargs}
 
 
 def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
@@ -164,7 +168,10 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
 
             return resp(
                 *get_summ_helper(
-                    bot_net=bot_net, bot_id=bot_id, role=role, config=config
+                    summary_repo=bot_net.summary_repo,
+                    bot_id=bot_id,
+                    role=role,
+                    config=config,
                 )
             )
         return http_e.response
@@ -189,7 +196,10 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
                 role = summary.get("role")
 
                 r, status = get_summ_helper(
-                    bot_net=bot_net, bot_id=bot_id, role=role, config=config
+                    summary_repo=bot_net.summary_repo,
+                    bot_id=bot_id,
+                    role=role,
+                    config=config,
                 )
 
                 if status != 200:
@@ -205,144 +215,91 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
     return bot_blueprint
 
 
-# TODO:
-# если мы отправляем текст без роли, то в роли нужно отправлять дефолтную роль
-# убедиться, что дефолтная роль проставляется
+def _get_summ_with_role(
+    summ_model: SummaryModel, summary_repo: SummaryRepo, config: Config, role
+) -> tuple[dict, int]:
+    if role == summ_model["role"]:
+        return _get_summ_previous_with_role(summ_model)
 
+    if role == default_role():
+        return _get_summ_previous(summ_model)
 
-def _get_summ_previous(bot_net: BotNet, bot_id) -> tuple[dict, int]:
-    # TODO: make sure bot existed
-    summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
-    if summary_model is None:
-        return (error_resp(description="summary not exists"), 400)
+    new_rolled_summ_text = send_request_to_gpt(
+        summ_model["text"],
+        config.env.MODEL_URI_GPT,
+        config.prompts.STYLE(role),
+        config.env.API_KEY,
+        0,
+    )
 
-    summ = summary_model["text"]
-    if summ is None or summ == "":
-        return (
-            make_summ_response(
-                id=bot_id,
-                has_summ=False,
-                summ_text="",
-                platform=summary_model["platform"],
-                date=summary_model["started_at"],
-                is_active=summary_model["active"],
-                role=summary_model["role"],
-                detalization=summary_model["detalization"],
-                name=summary_model["name"],
-            ),
-            200,
-        )
+    if new_rolled_summ_text is None or new_rolled_summ_text == "":
+        logger.error("failed to style role for request")
+        return _get_summ_previous_best(summ_model)
+
+    # TODO:
+    # make async (after response)
+    # dont dublicate input if role is default
+    # handle update_res == False
+    update_res = summary_repo.update_role_text(
+        bot_id=summ_model["id"], summary_with_role=new_rolled_summ_text, role=role
+    )
 
     return (
         make_summ_response(
-            id=bot_id,
+            summ=summ_model,
             has_summ=True,
-            summ_text=summary_model["text_with_role"]
-            if summary_model["text_with_role"] != ""
-            else summ,
-            platform=summary_model["platform"],
-            date=summary_model["started_at"],
-            is_active=summary_model["active"],
-            role=summary_model["role"]
-            if summary_model["role"] != ""
-            else default_role(),
-            detalization=summary_model["detalization"],
-            name=summary_model["name"],
+            summ_text=new_rolled_summ_text,
+            role=role,
         ),
         200,
     )
 
 
-# returns dict or status code
-def get_summ_helper(bot_net: BotNet, config: Config, bot_id, role) -> tuple[dict, int]:
-    if role == "":
-        return _get_summ_previous(bot_net=bot_net, bot_id=bot_id)
+def _get_summ_previous(summ_model: SummaryModel) -> tuple[dict, int]:
+    return (
+        make_summ_response(
+            summ=summ_model,
+            has_summ=True,
+            summ_text=summ_model["text"],
+            role=default_role(),
+        ),
+        200,
+    )
 
-    if not check_role(role):
-        return (error_resp(description="not a valid role"), 400)
 
-    # TODO: make sure bot existed
-    summary_model = bot_net.summary_repo.get_summary(bot_id=bot_id)
+def _get_summ_previous_with_role(summ_model: SummaryModel) -> tuple[dict, int]:
+    return (
+        make_summ_response(
+            summ=summ_model,
+            has_summ=True,
+            summ_text=summ_model["text_with_role"],
+            role=summ_model["role"],
+        ),
+        200,
+    )
+
+
+def _get_summ_previous_best(summ_model: SummaryModel):
+    if summ_model["text_with_role"] != "":
+        return _get_summ_previous_with_role(summ_model=summ_model)
+
+    return _get_summ_previous(summ_model=summ_model)
+
+
+def get_summ_helper(
+    summary_repo: SummaryRepo, config: Config, bot_id, role
+) -> tuple[dict, int]:
+    summary_model = summary_repo.get_summary(bot_id=bot_id)
     if summary_model is None:
         return (error_resp(description="summary not exists"), 400)
 
-    logger.info("summary_model %s", summary_model)
-    if summary_model["role"] == role and summary_model["text_with_role"] != "":
-        return (
-            make_summ_response(
-                id=bot_id,
-                has_summ=True,
-                summ_text=summary_model["text_with_role"],
-                platform=summary_model["platform"],
-                date=summary_model["started_at"],
-                is_active=summary_model["active"],
-                role=summary_model["role"],
-                detalization=summary_model["detalization"],
-                name=summary_model["name"],
-            ),
-            200,
-        )
+    summ_text = summary_model.get("text")
+    if summ_text is None or summ_text == "":
+        return (make_summ_response(summary_model), 200)
 
-    summ = summary_model["text"]
-    if summ is None or summ == "":
-        return (
-            make_summ_response(
-                id=bot_id,
-                has_summ=False,
-                summ_text="",
-                platform=summary_model["platform"],
-                date=summary_model["started_at"],
-                is_active=summary_model["active"],
-                role=summary_model["role"],
-                detalization=summary_model["detalization"],
-                name=summary_model["name"],
-            ),
-            200,
-        )
+    if role == "":
+        return _get_summ_previous_best(summ_model=summary_model)
 
-    if role != default_role():
-        summ = send_request_to_gpt(
-            summ,
-            config.env.MODEL_URI_GPT,
-            config.prompts.STYLE(role),
-            config.env.API_KEY,
-            0,
-        )
-        if summ is None or summ == "":
-            return (
-                make_summ_response(
-                    id=bot_id,
-                    has_summ=False,
-                    summ_text="",
-                    platform=summary_model["platform"],
-                    date=summary_model["started_at"],
-                    is_active=summary_model["active"],
-                    role=summary_model["role"],
-                    detalization=summary_model["detalization"],
-                    name=summary_model["name"],
-                ),
-                200,
-            )
-
-        # TODO:
-        # make async (after response)
-        # dont dublicate input if role is default
-        # handle update_res == False
-        update_res = bot_net.summary_repo.update_role_text(
-            bot_id=bot_id, summary_with_role=summ, role=role
-        )
-
-    return (
-        make_summ_response(
-            id=bot_id,
-            has_summ=True,
-            summ_text=summ,
-            platform=summary_model["platform"],
-            date=summary_model["started_at"],
-            is_active=summary_model["active"],
-            role=role,
-            detalization=summary_model["detalization"],
-            name=summary_model["name"],
-        ),
-        200,
+    return _get_summ_with_role(
+        summ_model=summary_model, summary_repo=summary_repo, config=config, role=role
     )
