@@ -36,7 +36,7 @@ def make_summ_response(summ: SummaryModel, **kwargs):
         }
 
     r = {**into_transfer(summ), **kwargs}
-    logger.info("make_summ_response kwargs: %s", **kwargs)
+    logger.info("make_summ_response kwargs: %s", kwargs)
     logger.info("make_summ_response: %s", r)
     return r
 
