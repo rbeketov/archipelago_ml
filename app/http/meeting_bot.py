@@ -218,6 +218,9 @@ def make_bot_handler(config: Config, bot_net: BotNet) -> Blueprint:
 def _get_summ_with_role(
     summ_model: SummaryModel, summary_repo: SummaryRepo, config: Config, role
 ) -> tuple[dict, int]:
+    if not check_role(role):
+        return (error_resp(description="not a valid role"), 400)
+
     if role == summ_model["role"]:
         return _get_summ_previous_with_role(summ_model)
 
