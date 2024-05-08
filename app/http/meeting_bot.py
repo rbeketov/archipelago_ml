@@ -30,7 +30,7 @@ def make_summ_response(summ: SummaryModel, **kwargs):
             "platform": summ["platform"],
             "date": summ["started_at"],
             "is_active": summ["active"],
-            "role": summ["role"],
+            "role": default_role(),
             "detalization": summ["detalization"],
             "name": summ["name"],
         }
