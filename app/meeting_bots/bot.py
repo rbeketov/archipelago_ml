@@ -338,7 +338,7 @@ class Bot:
         if prompt is None:
             return
 
-        logger.info("sync transcrpt: %s", self.transcript_full(False))
+        # logger.info("sync transcrpt: %s", self.transcript_full(False))
 
         if len(prompt) < min_prompt_len:
             logger.info(f"prompt less than {min_prompt_len}")

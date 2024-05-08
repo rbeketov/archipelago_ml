@@ -82,9 +82,14 @@ def send_request_to_gpt(
         logger.error(f"send_request_to_gpt: {e}")
         return None
 
-    for stop in STOP_RESPONSES:
-        if stop in resp_res.lower():
-            return None
+    strs_to_clean = resp_res.split(".")
+    strs = []
+    for str_to_clean in strs_to_clean:
+        for stop in STOP_RESPONSES:
+            if stop not in str_to_clean.lower():
+                strs.append(str_to_clean)
+
+    resp_res = ".".join(strs)
 
     try:
         click_client.insert_new_summaraize(system_prompt, input_text, resp_res)
