@@ -85,9 +85,15 @@ def send_request_to_gpt(
     strs_to_clean = resp_res.split(".")
     strs = []
     for str_to_clean in strs_to_clean:
+        clean = True
+
         for stop in STOP_RESPONSES:
-            if stop not in str_to_clean.lower():
-                strs.append(str_to_clean)
+            if stop in str_to_clean.lower():
+                clean = False
+                break
+
+        if clean:
+            strs.append(str_to_clean)
 
     resp_res = ".".join(strs)
 
