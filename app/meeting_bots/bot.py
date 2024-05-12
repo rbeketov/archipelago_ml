@@ -7,7 +7,6 @@ from typing import Callable, Dict, TypedDict, Optional, Union
 from functools import reduce
 from ..speach_kit import YaSpeechToText
 from ..utils import wrap_http_err, HTTPStatusException
-
 from .platform_parser import platform_by_url, Platform
 
 logger = Logger().get_logger(__name__)
@@ -245,7 +244,6 @@ class BotWebHooks(TypedDict):
 
 
 class Bot:
-    # from .real_time_audio import RealTimeAudio
 
     def __init__(
         self,
@@ -257,15 +255,17 @@ class Bot:
         speech_kit: YaSpeechToText,
         leave_callback: Callable = lambda _: _,
     ):
+        from .real_time_audio import RealTimeAudio
+
         self.bot_id = bot_id
         self.speech_kit = speech_kit
         self.recall_api = recall_api
         self.transcription = FullTranscription()
         self.summary_repo = summary_repo
 
-        # from .real_time_audio import RealTimeAudio
-
-        # self.real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
+        
+        logger.info(f"start RealTimeAudio with bot_id {self.bot_id}, speach_kit {self.speech_kit}")
+        self._real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
         self.platform = platform
         self.detalization = detalization
@@ -306,9 +306,9 @@ class Bot:
             speech_kit=speech_kit,
         )
 
-    # @property
-    # def real_time_audio(self) -> Optional["RealTimeAudio"]:
-    #     return self.real_time_audio
+    @property
+    def real_time_audio(self) -> Optional["RealTimeAudio"]:
+        return self._real_time_audio
 
     def leave(self):
         resp = self.recall_api.stop_recording(self.bot_id).json()

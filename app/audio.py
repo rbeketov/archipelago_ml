@@ -14,7 +14,7 @@ logger = Logger().get_logger(__name__)
 
 class AudioRaw:
     def __init__(
-        self, raw_data, _format="raw", sample_width=16000, channels=1, frame_rate=16
+        self, raw_data, _format="raw", sample_width=2, channels=1, frame_rate=16000
     ):
         self.audio_args = {
             "format": _format,
@@ -23,14 +23,11 @@ class AudioRaw:
             "channels": channels,
         }
         self.raw_data = raw_data
-        return self
 
-    def get(self, start, duration):
+    def get(self):
         return AudioSegment.from_file(
             io.BytesIO(self.raw_data),
-            start_second=start,
-            duration=duration,
-            **self.convert_args,
+            **self.audio_args,
         )
 
 

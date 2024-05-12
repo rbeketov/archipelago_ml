@@ -3,7 +3,7 @@ from requests import Response
 
 
 def get_ws_url(ip, port):
-    if ip or port:
+    if not ip or not port:
         return None
     return f"wss://{ip}:{port}"
 

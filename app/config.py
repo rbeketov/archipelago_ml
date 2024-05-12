@@ -2,6 +2,7 @@ from strenum import StrEnum
 import os
 from .meeting_bots import BotConfig
 from dotenv import load_dotenv
+from .utils import get_ws_url
 
 
 def summarization_with_detail(
@@ -85,9 +86,9 @@ def make_bot_config(
         "RECALL_API_TOKEN": recall_api_token,
         "NAME": "ArchipelagoSummer",
         "WEBHOOKS": {
-            "speaker_ws_url": None,  # get_ws_url(server_name, speaker_ws_port),
-            "audio_ws_url": None,  # get_ws_url(server_name, audio_ws_port),
-            "transcription_url": f"http://{ip}:{port}/transcription",
+            "speaker_ws_url": get_ws_url(server_name, speaker_ws_port), #None,  # get_ws_url(server_name, speaker_ws_port),
+            "audio_ws_url": get_ws_url(server_name, audio_ws_port), # None,
+            "transcription_url": None, #f"http://{ip}:{port}/transcription",
         },
         "MIN_PROMPT_LEN": min_prompt_len,
         "SUMM_GETTER_ENDP": f"http://{ip}:{notes_port}/api/summary/get",

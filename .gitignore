@@ -8,3 +8,7 @@
 **/*.service
 /client
 **/__pycache__
+output
+test.py
+app/logs
+/clickhouse

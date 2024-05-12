@@ -16,6 +16,9 @@ from .recall_ws_hooks import RecallWsHooks  # TODO: maybe cyclic
 
 logger = Logger().get_logger(__name__)
 
+TRANSCRIPT_TIMESTAMP_STEP = 5
+THRESHOLD_TIMESTAMP_STEP = 25
+
 
 class BotConfig(TypedDict):
     RECALL_API_TOKEN: str
@@ -155,9 +158,19 @@ class BotNet:
             if rt_audio is None:
                 logger.error("bot.real_time_audio is None")
             else:
-                transcripts = rt_audio.flush_to_transcripts()
-                for tr in transcripts:
-                    bot.add_transcription(tr)
+                if rt_audio.events_queue:
+                    rt_audio.timestamp_counter += TRANSCRIPT_TIMESTAMP_STEP
+                with rt_audio.mutex:
+                    if rt_audio.timestamp_counter >= THRESHOLD_TIMESTAMP_STEP:
+                        tr = rt_audio.get_transcription()
+                        if tr:
+                            bot.add_transcription(tr)
+                    else:
+                        logger.info(f"Spent {rt_audio.timestamp_counter}")
+                
+                #transcripts = rt_audio.flush_to_transcripts()
+                #for tr in transcripts:
+                #    
 
         def check_stop_schedurer():
             logger.info("check_stop_schedurer called")
@@ -168,11 +181,13 @@ class BotNet:
                 self._get_leave_callback()(bot)
 
         job1 = schedule.every(summary_interval_sec).seconds.do(summary_scheduler)
-        # job2 = schedule.every(20).seconds.do(transcript_scheduler)
+        
+        job2 = schedule.every(TRANSCRIPT_TIMESTAMP_STEP).seconds.do(transcript_scheduler)
+        
         job3 = schedule.every(30).seconds.do(check_stop_schedurer)
 
-        # self.jobs_by_bot[bot.bot_id].extend([job1, job2, job3])
-        self.jobs_by_bot[bot.bot_id].extend([job1, job3])
+        self.jobs_by_bot[bot.bot_id].extend([job1, job2, job3])
+        #self.jobs_by_bot[bot.bot_id].extend([job1, job3])
 
     @staticmethod
     def _stop_jobs(jobs):

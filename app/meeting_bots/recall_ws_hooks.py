@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import websockets
 from ..logger import Logger
+from .bot import Transcription
 
 
 logger = Logger().get_logger(__name__)
@@ -23,7 +24,7 @@ class RecallWsHooks:
         bot_id = None
         if isinstance(message, str):
             json_message = json.loads(message)
-            logger.info("%s: first message: %s", _handler_for_logs, json_message)
+            logger.info(f"{_handler_for_logs}: first message: {json_message}")
 
             bot_id = json_message.get("bot_id", None)
             if bot_id is None:
@@ -42,17 +43,17 @@ class RecallWsHooks:
 
         bot = self.bot_net.get_by_bot_id(bot_id)
         if bot is None:
-            logger.error("%s: bot with %s doesnt exist", _handler_for_logs, bot_id)
+            logger.error(f"{_handler_for_logs}: bot with {bot_id} doesnt exist")
             return None
 
         real_time_audio = bot.real_time_audio
         if real_time_audio is None:
             logger.error(
-                "%s: real_time_audio not set for %s", _handler_for_logs, bot_id
+                f"{ _handler_for_logs}: real_time_audio not set for {bot_id}"
             )
             return None
 
-        return real_time_audio
+        return bot
 
     # TODO: Remove
     @property
@@ -76,20 +77,24 @@ class RecallWsHooks:
         ):  # audio_handler message: {"protocol_version":1,"bot_id":"a45c0d94-5822-41c5-8794-9be38e359412","recording_id":"c
             # 333ff7f-dcab-4ec1-b39f-00a259488bb5","separate_streams":false,"offset":0.0}
 
+            
             first_message = await websocket.recv()
+            logger.info("audio_ws_handler: first_message: %s", first_message)
 
-            real_time_audio = self.get_real_time_audio_from_header(
+            bot = self.get_real_time_audio_from_header(
                 first_message, "audio_ws_handler_combined"
             )
-            if real_time_audio is None:
+            if bot is None or bot.real_time_audio is None:
+                logger.warning("audio_ws_handler close")
                 await websocket.close()
                 return
-
+            real_time_audio = bot.real_time_audio
             # TODO: handle not json and not string
             while True:
                 try:
                     message = await websocket.recv()
 
+                    # tts
                     real_time_audio.save_segment(message)
 
                 except websockets.ConnectionClosedOK:
@@ -106,13 +111,14 @@ class RecallWsHooks:
             # dcab-4ec1-b39f-00a259488bb5'}
             first_message = await websocket.recv()
 
-            real_time_audio = self.get_real_time_audio_from_header(
+            bot = self.get_real_time_audio_from_header(
                 first_message, "speaker_ws_handler"
             )
-            if real_time_audio is None:
+            if bot is None or bot.real_time_audio is None:
                 await websocket.close()
                 return
 
+            real_time_audio = bot.real_time_audio
             # TODO: handle not json and not string
             while True:
                 try:
@@ -124,7 +130,10 @@ class RecallWsHooks:
                     speaker = json_message["name"]
                     ts = json_message["timestamp"]
 
-                    real_time_audio.add_speaker_event(speaker=speaker, unmute_ts=ts)
+                    # TODO отсюда положитьтранскрпцию в бота? 
+                    current_transciption: Transcription = real_time_audio.set_speaker_event(speaker=speaker, unmute_ts=ts)
+                    if current_transciption:
+                        bot.add_transcription(current_transciption)
 
                 except websockets.ConnectionClosedOK:
                     break
