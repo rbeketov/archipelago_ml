@@ -244,7 +244,6 @@ class BotWebHooks(TypedDict):
 
 
 class Bot:
-
     def __init__(
         self,
         bot_id,
@@ -263,8 +262,9 @@ class Bot:
         self.transcription = FullTranscription()
         self.summary_repo = summary_repo
 
-        
-        logger.info(f"start RealTimeAudio with bot_id {self.bot_id}, speach_kit {self.speech_kit}")
+        logger.info(
+            f"start RealTimeAudio with bot_id {self.bot_id}, speach_kit {self.speech_kit}"
+        )
         self._real_time_audio = RealTimeAudio(self.bot_id, self.speech_kit)
 
         self.platform = platform

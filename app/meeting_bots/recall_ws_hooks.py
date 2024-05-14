@@ -48,9 +48,7 @@ class RecallWsHooks:
 
         real_time_audio = bot.real_time_audio
         if real_time_audio is None:
-            logger.error(
-                f"{ _handler_for_logs}: real_time_audio not set for {bot_id}"
-            )
+            logger.error(f"{ _handler_for_logs}: real_time_audio not set for {bot_id}")
             return None
 
         return bot
@@ -77,7 +75,6 @@ class RecallWsHooks:
         ):  # audio_handler message: {"protocol_version":1,"bot_id":"a45c0d94-5822-41c5-8794-9be38e359412","recording_id":"c
             # 333ff7f-dcab-4ec1-b39f-00a259488bb5","separate_streams":false,"offset":0.0}
 
-            
             first_message = await websocket.recv()
             logger.info("audio_ws_handler: first_message: %s", first_message)
 
@@ -130,8 +127,10 @@ class RecallWsHooks:
                     speaker = json_message["name"]
                     ts = json_message["timestamp"]
 
-                    # TODO отсюда положитьтранскрпцию в бота? 
-                    current_transciption: Transcription = real_time_audio.set_speaker_event(speaker=speaker, unmute_ts=ts)
+                    # TODO отсюда положитьтранскрпцию в бота?
+                    current_transciption: Transcription = (
+                        real_time_audio.set_speaker_event(speaker=speaker, unmute_ts=ts)
+                    )
                     if current_transciption:
                         bot.add_transcription(current_transciption)
 

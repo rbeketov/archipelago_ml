@@ -7,6 +7,7 @@ from ..logger import Logger
 
 logger = Logger().get_logger(__name__)
 
+
 class SpeakerEvent:
     speaker: str
     unmute_ts: float
@@ -33,17 +34,16 @@ class RealTimeAudio:
         with self.mutex:
             self.events_queue.append(SpeakerEvent(speaker=speaker, unmute_ts=unmute_ts))
             return self.get_transcription()
-            
+
     def save_segment(self, audio):
         # TODO buffer
         self.buffer.extend(audio)
-        #logger.info(f"saved segmet: {len(self.buffer)}")
-        #self.audio_file_manager.save_segment(audio)
+        # logger.info(f"saved segmet: {len(self.buffer)}")
+        # self.audio_file_manager.save_segment(audio)
 
     def get_transcription(self) -> Transcription:
         current_audio_data = bytes(self.buffer)
         self.buffer = []
-
 
         if len(self.events_queue) != 1:
             current_speaker = self.events_queue.popleft()
@@ -51,7 +51,7 @@ class RealTimeAudio:
             current_speaker = self.events_queue[-1]
 
         logger.info(f"Processed {current_speaker.speaker}")
-        
+
         transcipt_text = None
         try:
             audio_raw = AudioRaw(current_audio_data)
@@ -60,15 +60,13 @@ class RealTimeAudio:
             with open("output/test.mp3", "ab") as f:
                 f.write(opus_audio)
 
-            transcipt_text = self.speech_kit.get(
-                opus_audio
-            )
+            transcipt_text = self.speech_kit.get(opus_audio)
             logger.info(f"Getted transcription {transcipt_text}")
         except Exception as e:
             logger.error(f"Error while getting transcription: {e}")
             self.timestamp_counter = 0
             return None
-    
+
         if not transcipt_text:
             self.timestamp_counter = 0
             return None
@@ -84,7 +82,6 @@ class RealTimeAudio:
         self.tr_counter += 1
         self.timestamp_counter = 0
         return transcription
-
 
     def flush_to_transcripts(self) -> list[Transcription]:
         events_to_flush = self.events_queue
