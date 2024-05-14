@@ -55,6 +55,10 @@ class RecallApi(RecallApiBase):
             # },
         }
 
+        # TODO: test
+        if not destination_transcript_url:
+            body["recording_mode"] = "audio_only"
+
         if destination_transcript_url:
             body["real_time_transcription"] = {
                 "destination_url": destination_transcript_url,

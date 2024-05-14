@@ -168,10 +168,6 @@ class BotNet:
                     else:
                         logger.info(f"Spent {rt_audio.timestamp_counter}")
 
-                # transcripts = rt_audio.flush_to_transcripts()
-                # for tr in transcripts:
-                #
-
         def check_stop_schedurer():
             logger.info("check_stop_schedurer called")
             state = bot.recording_state()

@@ -1,11 +1,16 @@
 from threading import Lock
 from collections import deque
-from ..audio import AudioFileManager, AudioRaw, AudioConverter
+from ..audio import AudioRaw, AudioConverter
 from ..speach_kit import YaSpeechToText
 
 from ..logger import Logger
 
 logger = Logger().get_logger(__name__)
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .bot_net import Transcription
 
 
 class SpeakerEvent:
@@ -21,7 +26,7 @@ class RealTimeAudio:
     from .bot import Transcription
 
     def __init__(self, bot_id, speech_kit: YaSpeechToText):
-        self.audio_file_manager = AudioFileManager(bot_id)
+        # self.audio_file_manager = AudioFileManager(bot_id)
         self.events_queue: deque[SpeakerEvent] = deque()
         self.tr_counter = 0
         self.timestamp_counter = 0
@@ -30,16 +35,17 @@ class RealTimeAudio:
 
         self.mutex = Lock()
 
+    # get sync transcript (Roman typing)
     def set_speaker_event(self, speaker, unmute_ts) -> Transcription:
+        t = None
         with self.mutex:
             self.events_queue.append(SpeakerEvent(speaker=speaker, unmute_ts=unmute_ts))
-            return self.get_transcription()
+            t = self.get_transcription()
+
+        return t
 
     def save_segment(self, audio):
-        # TODO buffer
         self.buffer.extend(audio)
-        # logger.info(f"saved segmet: {len(self.buffer)}")
-        # self.audio_file_manager.save_segment(audio)
 
     def get_transcription(self) -> Transcription:
         current_audio_data = bytes(self.buffer)
@@ -57,8 +63,10 @@ class RealTimeAudio:
             audio_raw = AudioRaw(current_audio_data)
 
             opus_audio = AudioConverter(audio_raw.get()).convert_to_opus()
-            with open("output/test.mp3", "ab") as f:
-                f.write(opus_audio)
+
+            # DEBUG
+            # with open("output/test.mp3", "ab") as f:
+            #    f.write(opus_audio)
 
             transcipt_text = self.speech_kit.get(opus_audio)
             logger.info(f"Getted transcription {transcipt_text}")
@@ -71,7 +79,7 @@ class RealTimeAudio:
             self.timestamp_counter = 0
             return None
 
-        transcription: Transcription = {
+        transcription: "Transcription" = {
             "id": self.tr_counter,
             "sp": {
                 "is_final": True,
@@ -83,6 +91,7 @@ class RealTimeAudio:
         self.timestamp_counter = 0
         return transcription
 
+    """
     def flush_to_transcripts(self) -> list[Transcription]:
         events_to_flush = self.events_queue
         with self.mutex:
@@ -117,3 +126,4 @@ class RealTimeAudio:
 
         logger.info(f"getted transcriptions: {transcriptions}")
         return transcriptions
+    """

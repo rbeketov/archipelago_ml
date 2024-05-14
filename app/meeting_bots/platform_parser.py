@@ -26,7 +26,7 @@ def platform_by_url(url: str) -> Platform:
         return Platform.ZOOM
     if "meet.google" in url:
         return Platform.MEET
-    # TODO:
-    # add other platforms
+    if "teams" in url:
+        return Platform.TEEMS
 
     return Platform.ZOOM

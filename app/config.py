@@ -14,7 +14,7 @@ def summarization_with_detail(
         "Развёрнутая": " подробно",
     }
 
-    aggree_detail_prompt = aggree_detail_conv.get(agree_detail, "Средняя")
+    aggree_detail_prompt = aggree_detail_conv.get(agree_detail, ".")
     return f"Выдели основные мысли из диалога{aggree_detail_prompt}"
 
 
@@ -86,10 +86,8 @@ def make_bot_config(
         "RECALL_API_TOKEN": recall_api_token,
         "NAME": "ArchipelagoSummer",
         "WEBHOOKS": {
-            "speaker_ws_url": get_ws_url(
-                server_name, speaker_ws_port
-            ),  # None,  # get_ws_url(server_name, speaker_ws_port),
-            "audio_ws_url": get_ws_url(server_name, audio_ws_port),  # None,
+            "speaker_ws_url": get_ws_url(server_name, speaker_ws_port),
+            "audio_ws_url": get_ws_url(server_name, audio_ws_port),
             "transcription_url": None,  # f"http://{ip}:{port}/transcription",
         },
         "MIN_PROMPT_LEN": min_prompt_len,
