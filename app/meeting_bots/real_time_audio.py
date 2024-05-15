@@ -21,6 +21,7 @@ class SpeakerEvent:
         self.speaker = speaker
         self.unmute_ts = unmute_ts
 
+LAGS = 6400
 
 class RealTimeAudio:
     from .bot import Transcription
@@ -48,8 +49,16 @@ class RealTimeAudio:
         self.buffer.extend(audio)
 
     def get_transcription(self) -> Transcription:
-        current_audio_data = bytes(self.buffer)
-        self.buffer = []
+        #current_audio_data = bytes(self.buffer)
+        #self.buffer = []
+
+        # XXX: Roman costyl'
+        if len(self.buffer) > LAGS:
+            current_audio_data = bytes(self.buffer[:-LAGS])
+            self.buffer = self.buffer[len(self.buffer)-LAGS:]
+        else:
+            current_audio_data = bytes(self.buffer)
+            self.buffer = []
 
         if len(self.events_queue) != 1:
             current_speaker = self.events_queue.popleft()
