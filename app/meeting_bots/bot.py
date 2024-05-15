@@ -350,9 +350,9 @@ class Bot:
         if summ is None or summ == "":
             return
 
-        if summary_cleaner is not None:
-            summ = summary_cleaner(summ)
-            logger.info("cleaned_sum: %s", summ)
+        # if summary_cleaner is not None:
+            # summ = summary_cleaner(summ)
+            # logger.info("cleaned_sum: %s", summ)
 
         if summ is not None and summ != "":
             self.transcription.drop_to_summ(summ)
