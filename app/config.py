@@ -84,7 +84,7 @@ def make_bot_config(
 ) -> BotConfig:
     return {
         "RECALL_API_TOKEN": recall_api_token,
-        "NAME": "ArchipelagoSummer",
+        "NAME": "Archipelago Summaraiser",
         "WEBHOOKS": {
             "speaker_ws_url": get_ws_url(server_name, speaker_ws_port),
             "audio_ws_url": get_ws_url(server_name, audio_ws_port),
