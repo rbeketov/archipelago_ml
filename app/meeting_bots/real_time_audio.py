@@ -75,7 +75,7 @@ class RealTimeAudio:
             self.timestamp_counter = 0
             return None
 
-        if not transcipt_text:
+        if not transcipt_text or transcipt_text == "":
             self.timestamp_counter = 0
             return None
 

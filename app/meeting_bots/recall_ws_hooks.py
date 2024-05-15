@@ -133,7 +133,7 @@ class RecallWsHooks:
                     current_transciption: Transcription = (
                         real_time_audio.set_speaker_event(speaker=speaker, unmute_ts=ts)
                     )
-                    if current_transciption:
+                    if current_transciption and current_transciption != "":
                         bot.add_transcription(current_transciption)
 
                 except websockets.ConnectionClosedOK:
