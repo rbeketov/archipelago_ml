@@ -21,7 +21,7 @@ class SpeakerEvent:
         self.speaker = speaker
         self.unmute_ts = unmute_ts
 
-LAGS = 6400
+LAGS = 6400 * 3
 
 class RealTimeAudio:
     from .bot import Transcription
