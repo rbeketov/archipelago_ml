@@ -106,9 +106,15 @@ class BotNet:
             temperature=self.config["SUMM_TRANSFER_TEMP"],
         )
 
+        summary_cleaner_prompt = (
+            self.config["SUMM_CLEANER_PROMPT"](bot.detalization)
+            if transf_with_detalization
+            else self.config["SUMM_CLEANER_PROMPT"]
+        )
+
         summary_cleaner = (
             self.summary_baker.get_callback(
-                prompt=self.config["SUMM_CLEANER_PROMPT"],
+                prompt=summary_cleaner_prompt,
                 temperature=self.config["SUMM_CLEANER_TEMP"],
             )
             if with_cleaner

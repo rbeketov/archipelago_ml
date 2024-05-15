@@ -17,10 +17,24 @@ def summarization_with_detail(
     aggree_detail_prompt = aggree_detail_conv.get(agree_detail, ".")
     return f"Выдели основные мысли из диалога{aggree_detail_prompt}"
 
+def summarization_with_detail_clean(
+    agree_detail: str = "Средняя",
+):
+    aggree_detail_conv: dict = {
+        "Развёрнутая" : " очень подробно",
+        "Средняя" : "",
+        "Краткая": " кратко"
+    }
+
+
+    aggree_detail_prompt = aggree_detail_conv.get(agree_detail, "")
+    return f"Оставь только главное в тексте{aggree_detail_prompt}"
+
 
 class SystemPromts(StrEnum):
     SUMMARAIZE = summarization_with_detail("Средняя")
-    CLEAN_SUMMARIZATION = "Оставь только главное в тексте"
+    CLEAN_SUMMARIZATION_WITH_DETAIL = lambda d: summarization_with_detail_clean(d)
+    CLEAN_SUMMARIZATION = summarization_with_detail_clean("Средняя")
     STYLE = lambda role: f"Стилизуй текст в роли {role}"  # noqa: E731
     SUMMARAIZE_WITH_DETAIL = lambda d: summarization_with_detail(d)
 
@@ -136,7 +150,7 @@ class Config:
                 summ_transfer_temp=env.SUMM_TRANSFER_TEMP,
                 summ_transfer_prompt=prompts.SUMMARAIZE_WITH_DETAIL,
                 summ_cleaner_temp=env.SUMM_CLEANER_TEMP,
-                summ_cleaner_prompt=prompts.CLEAN_SUMMARIZATION,
+                summ_cleaner_prompt=prompts.CLEAN_SUMMARIZATION_WITH_DETAIL,
                 summ_interval_sec=env.SUMMARY_INTERVAL,
             )
             cls._system_prompts = prompts
