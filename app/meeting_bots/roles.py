@@ -1,4 +1,4 @@
-OFFICIAL_STYLE = "деловой стиль"
+OFFICIAL_STYLE = "деловой"
 
 _ALLOWED_ROLES = [
     "обычный",
