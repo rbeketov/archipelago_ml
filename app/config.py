@@ -3,6 +3,7 @@ import os
 from .meeting_bots import BotConfig
 from dotenv import load_dotenv
 from .utils import get_ws_url
+from .meeting_bots.roles import OFFICIAL_STYLE
 
 
 def summarization_with_detail(
@@ -30,12 +31,16 @@ def summarization_with_detail_clean(
     aggree_detail_prompt = aggree_detail_conv.get(agree_detail, "")
     return f"Оставь только главное в тексте{aggree_detail_prompt}"
 
+def style(role):
+    if role == OFFICIAL_STYLE:
+        return "Стилизуй текст в деловом стиле"
+    return f"Стилизуй текст в роли {role}"
 
 class SystemPromts(StrEnum):
     SUMMARAIZE = summarization_with_detail("Средняя")
     CLEAN_SUMMARIZATION_WITH_DETAIL = lambda d: summarization_with_detail_clean(d)
     CLEAN_SUMMARIZATION = summarization_with_detail_clean("Средняя")
-    STYLE = lambda role: f"Стилизуй текст в роли {role}"  # noqa: E731
+    STYLE = lambda role: style(role)
     SUMMARAIZE_WITH_DETAIL = lambda d: summarization_with_detail(d)
 
     SUMMARAIZE_OLD = "Ты помогаешь суммаризировать разговор между людьми. Твоя задача - выделять ключевые мысли. Максимум 10 предложений. Если какие то предложения не несут смысла - пропускай их. В конечном тексте не должно быть 'Speaker'."

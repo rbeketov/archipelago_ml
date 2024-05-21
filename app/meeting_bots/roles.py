@@ -1,11 +1,13 @@
+OFFICIAL_STYLE = "деловой стиль"
+
 _ALLOWED_ROLES = [
     "обычный",
     "гопник",
     "пират",
+    OFFICIAL_STYLE,
 ]
 
 _DEFAULT_ROLE = _ALLOWED_ROLES[0]
-
 
 def default_role() -> str:
     return _DEFAULT_ROLE
