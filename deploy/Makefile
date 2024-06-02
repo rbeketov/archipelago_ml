@@ -1,4 +1,4 @@
-PROJECT_DIR ?= /home/ubuntu/archipelago_ml
+PROJECT_DIR ?= /home/yavka/archipelago_ml
 
 start:
 	sudo systemctl start ml.service
