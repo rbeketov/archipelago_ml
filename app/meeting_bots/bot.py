@@ -112,11 +112,9 @@ class SummaryRepo:
 
         # TODO:
         self.update_role_text_endp = (
-            "http://185.241.194.125:8899/api/summary/update_text_role"
+            "http://localhost:8899/api/summary/update_text_role"
         )
-        self.get_active_summaries_endp = (
-            "http://185.241.194.125:8899/api/summary/active"
-        )
+        self.get_active_summaries_endp = "http://localhost:8899/api/summary/active"
 
     def init_summary(self, bot_id, platform: str, detalization: str) -> bool:
         try:
