@@ -3,6 +3,7 @@
 .env
 /.mypy_cache
 .flake8
+.idea
 .pylintrc
 /audio_data
 **/*.service

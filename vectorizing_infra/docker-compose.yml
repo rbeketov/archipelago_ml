@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  triton_server:
+    build: ./triton/
+    ports:
+      - "1234:8000"
+    volumes:
+      - ./triton/models:/models
+      - ./triton/assets:/assets
+    environment:
+      - ASSETS_PATH=/assets
+    stdin_open: true
+    tty: true
+
+  init_qdrant:
+    build: ./init_qdrant
+    restart: "no"
+
+  qdrant:
+    build: qdrant/qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./triton/qdrant_storage:/qdrant/storage:z
+    stdin_open: true
+    tty: true
+    depends_on:
+      - init_qdrant
