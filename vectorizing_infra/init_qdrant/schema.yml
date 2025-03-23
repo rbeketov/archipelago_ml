@@ -1,0 +1,5 @@
+host: 'localhost'
+port: 6333
+collection_name: 'entitys'
+vector_size: 64
+distance: 'cosine'
