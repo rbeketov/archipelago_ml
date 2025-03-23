@@ -1,5 +1,5 @@
 host: 'localhost'
 port: 6333
-collection_name: 'my_collection'
+collection_name: 'entitys'
 vector_size: 64
 distance: 'cosine'
