@@ -3,6 +3,7 @@ version: '3.8'
 services:
   triton_server:
     build: ./triton/
+    restart: on-failure
     ports:
       - "1234:8000"
       - "1236:8002"
@@ -20,6 +21,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant
+    restart: on-failure
     ports:
       - "6333:6333"
     volumes:
