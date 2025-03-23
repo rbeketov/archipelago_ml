@@ -3,6 +3,7 @@ version: '3'
 services:
   clickhouse_ml:
     image: yandex/clickhouse-server
+    restart: on-failure
     ports:
       - "8124:8123"
     volumes:
