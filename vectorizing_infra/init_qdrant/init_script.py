@@ -33,9 +33,10 @@ def create_collection(client: QdrantClient, config: dict):
 
 
 if __name__ == "__main__":
-    config = load_config("./schema.yml")
+    config = load_config("./init_qdrant/schema.yml")
     client = wait_for_qdrant(config['host'], config['port'])
-#    if client['collection_name'] not in client.get_collections():
-    create_collection(client, config)
 
-    #print(f"Collection '{client['collection_name']}' ready")
+    if not client.collection_exists(collection_name=config['collection_name']):
+        create_collection(client, config)
+
+    print(f"Collection '{config['collection_name']}' ready")
