@@ -15,4 +15,6 @@ app/logs
 /clickhouse
 vectorizing_infra/triton/assets/
 vectorizing_infra/triton/models/
+vectorizing_infra/triton/._assets
+vectorizing_infra/triton/._models
 vectorizing_infra/triton/qdrant_storage/
