@@ -14,11 +14,6 @@ services:
       - ASSETS_PATH=/assets
     stdin_open: true
     tty: true
-
-  init_qdrant:
-    build: ./init_qdrant
-    restart: "no"
-
   qdrant:
     image: qdrant/qdrant
     restart: on-failure
@@ -28,5 +23,3 @@ services:
       - ./triton/qdrant_storage:/qdrant/storage:z
     stdin_open: true
     tty: true
-    depends_on:
-      - init_qdrant
