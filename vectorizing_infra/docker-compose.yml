@@ -14,6 +14,8 @@ services:
       - ASSETS_PATH=/assets
     stdin_open: true
     tty: true
+    networks:
+      - net
   qdrant:
     image: qdrant/qdrant
     restart: on-failure
@@ -23,3 +25,11 @@ services:
       - ./triton/qdrant_storage:/qdrant/storage:z
     stdin_open: true
     tty: true
+    networks:
+      - net
+
+
+networks:
+  net:
+    external: true
+    name: shared-network
