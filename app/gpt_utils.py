@@ -7,14 +7,21 @@ from .db import ClickClient
 
 logger = Logger().get_logger(__name__)
 
+
+STOP_WORDS_FOR_CLEAR = [
+    "сложно выделить конкретные основные мысли",
+    "сложно выделить основные мысли",
+    "диалог не содержит чётко выраженной основной мысли",
+]
+
+CNT_RETRY = 3
 STOP_RESPONSES = [
     "простите",
     "я не понимаю о чем вы",
     "я не могу ничего сказать об этом",
     "давайте сменим тему",
-    "сложно выделить конкретные основные мысли",
-    "сложно выделить основные мысли",
-    "диалог не содержит чётко выраженной основной мысли",
+    "(https://ya.ru)",
+    "В интернете есть много сайтов с информацией на эту тему.",
 ]
 
 
@@ -71,13 +78,26 @@ def send_request_to_gpt(
         "Authorization": api_key,
     }
 
-    response = requests.post(url, headers=headers, json=prompt)
-    logger.debug(f"send_request_to_gpt response: {response.json()}")
-
     try:
-        resp_json = response.json()
-        logger.info(resp_json)
-        resp_res = resp_json["result"]["alternatives"][0]["message"]["text"]
+        for i in range(CNT_RETRY):
+            response = requests.post(url, headers=headers, json=prompt)
+            resp_json = response.json()
+
+            logger.info(f"Ответ от GPT. Попытка {i+1}/{CNT_RETRY}: {resp_json}")
+            resp_res = resp_json["result"]["alternatives"][0]["message"]["text"]
+
+            find_stop_for_retry = False
+            for sentence in resp_res.split("."):
+                for stop_phrase in STOP_RESPONSES:
+                    if stop_phrase in sentence:
+                        find_stop_for_retry = True
+                        break
+                if find_stop_for_retry:
+                    break
+            if not find_stop_for_retry:
+                break
+        else:
+            raise RuntimeError(f"После {CNT_RETRY} ретраев не получилось получить валидной суммаризации")
     except Exception as e:
         logger.error(f"send_request_to_gpt: {e}")
         return None
@@ -87,7 +107,7 @@ def send_request_to_gpt(
     for str_to_clean in strs_to_clean:
         clean = True
 
-        for stop in STOP_RESPONSES:
+        for stop in STOP_WORDS_FOR_CLEAR:
             if stop in str_to_clean.lower():
                 clean = False
                 break
